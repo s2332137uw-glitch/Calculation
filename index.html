@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Calculation Experiment</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- 開始画面 -->
+    <div id="startScreen">
+
+        <h1>計算課題</h1>
+
+        <p>表示された数式が正しいか判断してください。</p>
+
+        <p>YES = 正しい　NO = 間違っている</p>
+
+        <button id="startButton">開始</button>
+
+    </div>
+
+
+    <!-- 問題画面 -->
+    <div id="questionScreen" style="display:none;">
+
+        <h1 id="stimulus">3 + 5 = 8</h1>
+
+        <button id="yesButton">YES</button>
+
+        <button id="noButton">NO</button>
+
+    </div>
+
+
+    <!-- 待機画面 -->
+    <div id="waitScreen" style="display:none;">
+
+        <h1 id="waitLabel">お待ちください</h1>
+
+    </div>
+
+
+    <!-- 実験終了画面 -->
+    <div id="finishScreen" style="display:none;">
+
+        <h1>実験終了</h1>
+
+        <button id="downloadButton">
+            結果を保存
+        </button>
+
+    </div>
+
+
+    <script src="main.js"></script>
+
+</body>
+
+</html>
