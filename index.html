@@ -10,8 +10,28 @@
 
 <body>
 
-    <!-- 開始画面 -->
-    <div id="startScreen">
+    <!-- 参加者番号入力画面 -->
+    <div id="participantScreen">
+
+        <h1>計算課題</h1>
+
+        <p>参加者番号を入力してください。</p>
+
+        <input
+            type="text"
+            id="participantId"
+            placeholder="参加者番号"
+        >
+
+        <br>
+
+        <button id="participantNextButton">次へ</button>
+
+    </div>
+
+
+    <!-- 課題説明画面 -->
+    <div id="startScreen" style="display:none;">
 
         <h1>計算課題</h1>
 
@@ -19,7 +39,7 @@
 
         <p>YES = 正しい　NO = 間違っている</p>
 
-        <button id="startButton">開始</button>
+        <button id="startButton">実験開始</button>
 
     </div>
 
