@@ -71,3 +71,12 @@ h1 {
     font-size: 40px;
 
 }
+
+#participantId {
+    font-size: 36px;
+    width: 350px;
+    height: 60px;
+    text-align: center;
+    margin: 15px;
+    box-sizing: border-box;
+}
