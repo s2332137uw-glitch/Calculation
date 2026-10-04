@@ -1,9 +1,20 @@
-/// =======================
+// =======================
 // 画面
 // =======================
 
+const participantScreen =
+    document.getElementById("participantScreen");
+
+const participantIdInput =
+    document.getElementById("participantId");
+
+const participantNextButton =
+    document.getElementById("participantNextButton");
+
 const startButton =
     document.getElementById("startButton");
+
+let participantId = "";
 
 const startScreen =
     document.getElementById("startScreen");
@@ -26,9 +37,11 @@ const waitScreen =
 const waitLabel =
     document.getElementById("waitLabel");
 
+const finishScreen =
+    document.getElementById("finishScreen");
+
 const downloadButton =
     document.getElementById("downloadButton");
-
 
 // =======================
 // 現在の問題
@@ -708,24 +721,17 @@ function startWaitScreen(){
 
 
         // =======================
-        // 全条件終了
-        // =======================
+// 全条件終了
+// =======================
 
-        waitScreen.style.display =
-            "block";
+waitScreen.style.display =
+    "none";
 
-        questionScreen.style.display =
-            "none";
+questionScreen.style.display =
+    "none";
 
-
-        waitLabel.textContent =
-            "実験終了";
-
-
-        // CSV保存ボタンを表示
-        downloadButton.style.display =
-            "block";
-
+finishScreen.style.display =
+    "block";
 
     }, waitTime * 1000);
 
@@ -838,25 +844,22 @@ function checkAnswer(userPressedYes){
 ){
 
     // 条件15終了
-    if(
-        !basePhase &&
-        conditionIndex === conditions.length - 1
-    ){
+if(
+    !basePhase &&
+    conditionIndex === conditions.length - 1
+){
 
-        waitScreen.style.display =
-            "block";
+    waitScreen.style.display =
+        "none";
 
-        questionScreen.style.display =
-            "none";
+    questionScreen.style.display =
+        "none";
 
-        waitLabel.textContent =
-            "実験終了";
+    finishScreen.style.display =
+        "block";
 
-        downloadButton.style.display =
-            "block";
-
-        return;
-    }
+    return;
+}
 
     // ベース終了、または条件1～14終了
     conditionIndex++;
@@ -886,7 +889,7 @@ function downloadCSV(){
     // =======================
 
     let csv =
-        "phase,task,stimulus,correct,reactionTime,mode,waitTime,condition\n";
+    "participantId,phase,task,stimulus,correct,reactionTime,mode,waitTime,condition\n";
 
 
     // =======================
@@ -896,24 +899,16 @@ function downloadCSV(){
     results.forEach((r)=>{
 
         csv +=
-
-            r.phase + "," +
-
-            r.task + "," +
-
-            r.stimulus + "," +
-
-            r.correct + "," +
-
-            r.reactionTime + "," +
-
-            r.mode + "," +
-
-            r.waitTime + "," +
-
-            r.condition +
-
-            "\n";
+    participantId + "," +
+    r.phase + "," +
+    r.task + "," +
+    r.stimulus + "," +
+    r.correct + "," +
+    r.reactionTime + "," +
+    r.mode + "," +
+    r.waitTime + "," +
+    r.condition +
+    "\n";
 
     });
 
@@ -949,7 +944,9 @@ function downloadCSV(){
 
 
     a.download =
-        "calculation_experiment_result.csv";
+    "calculation_experiment_result_" +
+    participantId +
+    ".csv";
 
 
     a.click();
@@ -961,47 +958,58 @@ function downloadCSV(){
 
 
 // =======================
-// 開始
+// 参加者番号入力
+// =======================
+
+participantNextButton.addEventListener(
+    "click",
+    ()=>{
+
+        // 参加者番号を取得
+        participantId =
+            participantIdInput.value.trim();
+
+        // 未入力なら次に進まない
+        if(participantId === ""){
+            alert("参加者番号を入力してください。");
+            return;
+        }
+
+        // 参加者番号画面を消す
+        participantScreen.style.display =
+            "none";
+
+        // 課題説明画面を表示
+        startScreen.style.display =
+            "block";
+
+    }
+);
+
+
+// =======================
+// 実験開始
 // =======================
 
 startButton.addEventListener(
     "click",
     ()=>{
 
-        // =======================
-        // 開始画面を消す
-        // =======================
-
+        // 課題説明画面を消す
         startScreen.style.display =
             "none";
 
-
-        // =======================
         // 問題画面を表示
-        // =======================
-
         questionScreen.style.display =
             "block";
 
-
-        // =======================
         // 条件を作る
-        // =======================
-
         generateConditions();
 
-
-        // =======================
         // 計算問題を64問作る
-        // =======================
-
         generateQuestions();
 
-
-        // =======================
         // 最初の問題を表示
-        // =======================
-
         showQuestion();
 
     }
