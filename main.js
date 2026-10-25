@@ -212,278 +212,195 @@ function generateConditions(){
 // 計算問題生成
 // =======================
 
-function generateQuestions(){
+
+function generateQuestions() {
 
     // =======================
-    // 問題プールを空にする
+    // 問題をシャッフルする関数
     // =======================
-
-    questionPool = [];
-
-    answerPool = [];
-
-
-    // =======================
-    // 20～99の数字を使用
-    // =======================
-
-    for(let a = 20; a <= 99; a++){
-
-        for(let b = 20; b <= 99; b++){
-
-
-            // =======================
-            // 足し算
-            // =======================
-
-            // 1の位の合計が10以上
-            // → 繰り上がりあり
-
-            if(
-                (a % 10) +
-                (b % 10) >= 10
-            ){
-
-                const ans =
-                    a + b;
-
-
-                // -----------------------
-                // 正しい問題
-                // -----------------------
-
-                questionPool.push(
-
-                    a +
-                    " + " +
-                    b +
-                    " = " +
-                    ans
-
-                );
-
-                answerPool.push(true);
-
-
-                // -----------------------
-// 間違った問題
-// 一の位は正解と同じ
-// 十の位だけ変更
-// -----------------------
-
-let wrongAnswer;
-
-if(
-    Math.random() < 0.5
-){
-
-    // 十の位を10増やす
-    wrongAnswer =
-        ans + 10;
-
-}else{
-
-    // 十の位を10減らす
-    wrongAnswer =
-        ans - 10;
-
-}
-
-
-questionPool.push(
-
-    a +
-        " + " +
-    b +
-        " = " +
-    wrongAnswer
-
-);
-
-answerPool.push(false);
-
-            }
-
-
-            // =======================
-            // 引き算
-            // =======================
-
-            // a > b
-            // かつ
-            // aの1の位 < bの1の位
-            //
-            // → 繰り下がりあり
-
-            if(
-                a > b &&
-                (a % 10) <
-                (b % 10)
-            ){
-
-                const ans =
-                    a - b;
-
-
-                // -----------------------
-                // 正しい問題
-                // -----------------------
-
-                questionPool.push(
-
-                    a +
-                    " - " +
-                    b +
-                    " = " +
-                    ans
-
-                );
-
-                answerPool.push(true);
-
-
-                // -----------------------
-// 間違った問題
-// 一の位は正解と同じ
-// 十の位だけ変更
-// -----------------------
-
-let wrongAnswer;
-
-if(ans >= 10){
-
-    if(
-        Math.random() < 0.5
-    ){
-
-        // 十の位を10増やす
-        wrongAnswer =
-            ans + 10;
-
-    }else{
-
-        // 十の位を10減らす
-        wrongAnswer =
-            ans - 10;
-
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     }
 
-}else{
+    // =======================
+    // 問題を4種類に分ける
+    // =======================
+    const addCorrect = [];
+    const addIncorrect = [];
+    const subCorrect = [];
+    const subIncorrect = [];
 
-    // 答えが10未満の場合
-    // 10増やす
-    wrongAnswer =
-        ans + 10;
+    // 問題の重複を防ぐ
+    const seen = new Set();
 
-}
+    function addProblem(pool, stimulus, answer) {
+        if (seen.has(stimulus)) return;
 
+        seen.add(stimulus);
+        pool.push({
+            stimulus: stimulus,
+            answer: answer
+        });
+    }
 
-questionPool.push(
+    // =======================
+    // 問題を生成
+    // =======================
+    for (let a = 20; a <= 99; a++) {
+        for (let b = 20; b <= 99; b++) {
 
-    a +
-        " - " +
-    b +
-        " = " +
-    wrongAnswer
+            // -----------------------
+            // 足し算：繰り上がりあり
+            // 答えは2桁（99以下）
+            // -----------------------
+            if (
+                (a % 10) + (b % 10) >= 10 &&
+                a + b <= 99
+            ) {
+                const ans = a + b;
 
-);
+                addProblem(
+                    addCorrect,
+                    `${a} + ${b} = ${ans}`,
+                    true
+                );
 
-answerPool.push(false);
-
+                // 誤答は正解の±10
+                // ただし答えは2桁のまま
+                for (const wrong of [ans - 10, ans + 10]) {
+                    if (wrong >= 10 && wrong <= 99) {
+                        addProblem(
+                            addIncorrect,
+                            `${a} + ${b} = ${wrong}`,
+                            false
+                        );
+                    }
+                }
             }
 
+            // -----------------------
+            // 引き算：繰り下がりあり
+            // 答えは2桁（10以上）
+            // -----------------------
+            if (
+                a > b &&
+                (a % 10) < (b % 10) &&
+                a - b >= 10
+            ) {
+                const ans = a - b;
+
+                addProblem(
+                    subCorrect,
+                    `${a} - ${b} = ${ans}`,
+                    true
+                );
+
+                // 誤答は正解の±10
+                // ただし答えは2桁のまま
+                for (const wrong of [ans - 10, ans + 10]) {
+                    if (wrong >= 10 && wrong <= 99) {
+                        addProblem(
+                            subIncorrect,
+                            `${a} - ${b} = ${wrong}`,
+                            false
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // =======================
+    // 各種類から16問ずつ選ぶ
+    // 合計64問
+    // =======================
+    const pools = [
+        { name: "足し算・正しい", data: addCorrect },
+        { name: "足し算・間違い", data: addIncorrect },
+        { name: "引き算・正しい", data: subCorrect },
+        { name: "引き算・間違い", data: subIncorrect }
+    ];
+
+    const selectedPools = [];
+
+    for (const pool of pools) {
+        shuffle(pool.data);
+
+        if (pool.data.length < 16) {
+            throw new Error(
+                pool.name + "の問題が16問未満です：" +
+                pool.data.length + "問"
+            );
         }
 
+        selectedPools.push(pool.data.slice(0, 16));
     }
 
-
     // =======================
-    // 問題をシャッフル
+    // 4問ずつのブロックを作成
+    // 各ブロックに4種類を1問ずつ入れる
     // =======================
+    const blocks = [];
 
-    let order = [];
-
-
-    for(
-        let i = 0;
-        i < questionPool.length;
-        i++
-    ){
-
-        order.push(i);
-
-    }
-
-
-    for(
-        let i = order.length - 1;
-        i > 0;
-        i--
-    ){
-
-        const j =
-            Math.floor(
-                Math.random() * (i + 1)
-            );
-
-
-        [
-            order[i],
-            order[j]
-        ] =
-        [
-            order[j],
-            order[i]
+    for (let i = 0; i < 16; i++) {
+        const block = [
+            selectedPools[0][i],
+            selectedPools[1][i],
+            selectedPools[2][i],
+            selectedPools[3][i]
         ];
 
+        // ブロック内の問題順をランダムにする
+        shuffle(block);
+        blocks.push(block);
     }
 
+    // ブロックの順番もランダムにする
+    shuffle(blocks);
 
     // =======================
-    // 64問を決定
+    // 実験で使用する配列に格納
     // =======================
-
+    questionPool = [];
+    answerPool = [];
     questions = [];
-
     answers = [];
 
+    for (const block of blocks) {
+        for (const problem of block) {
+            questionPool.push(problem.stimulus);
+            answerPool.push(problem.answer);
 
-    for(
-        let i = 0;
-        i < totalQuestions;
-        i++
-    ){
-
-        const index =
-            order[i];
-
-
-        questions.push(
-            questionPool[index]
-        );
-
-
-        answers.push(
-            answerPool[index]
-        );
-
+            questions.push(problem.stimulus);
+            answers.push(problem.answer);
+        }
     }
 
+    console.log("===== 問題構成 =====");
+    console.log("合計問題数：", questions.length);
+    console.log("正しい問題：",
+        answers.filter(answer => answer).length);
+    console.log("間違った問題：",
+        answers.filter(answer => !answer).length);
+    console.log("足し算：",
+        questions.filter(q => q.includes("+")).length);
+    console.log("引き算：",
+        questions.filter(q => q.includes("-")).length);
 
-    console.log(
-        "問題プール：" +
-        questionPool.length +
-        "問"
-    );
+    console.log("===== ブロック別の問題 =====");
 
-
-    console.log(
-        "実験で使用する問題：" +
-        questions.length +
-        "問"
-    );
-
+    for (let i = 0; i < 16; i++) {
+        console.log(
+            `ブロック${i + 1}`,
+            questions.slice(i * 4, i * 4 + 4)
+        );
+    }
 }
+
 
 
 // =======================
@@ -677,7 +594,7 @@ function startWaitScreen(){
 
             basePhase = false;
 
-            questionIndex = 0;
+             questionIndex = blockSize;
 
 
             // 最初の条件の待機後
@@ -861,21 +778,30 @@ if(
     return;
 }
 
-    // ベース終了、または条件1～14終了
-    conditionIndex++;
-    startWaitScreen();
+    // ベースライン終了後は、条件番号を進めずに
+    // 最初の条件（conditionIndex = 0）から開始する
+    if (basePhase) {
+        startWaitScreen();
+        return;
+    }
 
-    return;
+    // 条件の4問が終了したら、次の条件へ
+conditionIndex++;
+startWaitScreen();
+
+return;
+}
+
+// =======================
+// 次の問題
+// =======================
+
+// 4問の途中なら次の問題を表示
+showQuestion();
+
 }
 
 
-    // =======================
-    // 次の問題
-    // =======================
-
-    showQuestion();
-
-}
 
 
 // =======================
