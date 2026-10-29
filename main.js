@@ -799,22 +799,24 @@ function downloadCSV() {
 
     // CSVの見出し
     let csv =
-        "\uFEFFparticipantId,phase,task,stimulus,correct,reactionTime,mode,waitTime,condition\n";
+    "\uFEFFparticipantId,phase,task,stimulus,response,correct,reactionTime,mode,waitTime,condition,questionNumber\n";
 
     // 結果をCSVに追加
-    results.forEach((r) => {
-        csv +=
-            participantId + "," +
-            r.phase + "," +
-            r.task + "," +
-            r.stimulus + "," +
-            r.correct + "," +
-            r.reactionTime + "," +
-            r.mode + "," +
-            r.waitTime + "," +
-            r.condition +
-            "\n";
-    });
+results.forEach((r) => {
+    csv +=
+        participantId + "," +
+        r.phase + "," +
+        r.task + "," +
+        r.stimulus + "," +
+        r.response + "," +
+        r.correct + "," +
+        r.reactionTime + "," +
+        r.mode + "," +
+        r.waitTime + "," +
+        r.condition + "," +
+        r.questionNumber +
+        "\n";
+});
 
     // CSVファイル作成
     const blob = new Blob(
