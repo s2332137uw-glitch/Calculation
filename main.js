@@ -707,32 +707,36 @@ function checkAnswer(userPressedYes) {
 
     // 結果を追加
     results.push({
-        phase: basePhase
-            ? "base"
-            : "condition",
 
-        task: "CALCULATION",
+    participantId: participantId,
 
-        stimulus:
-            questions[questionIndex],
+    phase: basePhase ? "base" : "condition",
 
-        correct: correct,
+    task: "CALCULATION",
 
-        reactionTime:
-            reactionTime.toFixed(1),
+    stimulus: questions[questionIndex],
 
-        mode: basePhase
-            ? "none"
-            : conditions[conditionIndex].mode,
+    response: userPressedYes ? "YES" : "NO",
 
-        waitTime: basePhase
-            ? 0
-            : conditions[conditionIndex].waitTime,
+    correct: correct,
 
-        condition: basePhase
-            ? "base"
-            : conditionIndex
-    });
+    reactionTime: reactionTime.toFixed(1),
+
+    mode: basePhase
+        ? "none"
+        : conditions[conditionIndex].mode,
+
+    waitTime: basePhase
+        ? 0
+        : conditions[conditionIndex].waitTime,
+
+    condition: basePhase
+        ? "base"
+        : conditionIndex,
+
+    questionNumber: (questionIndex % blockSize) + 1
+
+});
 
     // 次の問題へ
     questionIndex++;
