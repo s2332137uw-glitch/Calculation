@@ -1,7 +1,7 @@
 
 // ==================================================
 // 計算課題 main.js
-// タスクスイッチング課題と同じ構成
+// 15セットの問題を事前に固定する方式
 // ==================================================
 
 
@@ -67,8 +67,9 @@ let results = [];
 // 保存設定
 // =======================
 
+// 新しい問題セット方式に合わせてバージョン変更
 const STORAGE_KEY =
-    "calculationExperimentAutosave_v3";
+    "calculationExperimentAutosave_v4";
 
 
 // =======================
@@ -148,6 +149,437 @@ let waitDeadline = null;
 let waitTimeout = null;
 
 let waitInterval = null;
+
+
+// ==================================================
+// 事前作成した計算問題15セット
+// ==================================================
+
+// 問題はすべて事前に記述する。
+// 各セットには以下の4種類を1問ずつ入れる。
+// ・正しい足し算
+// ・間違った足し算
+// ・正しい引き算
+// ・間違った引き算
+//
+// answer:
+// true  = 正しい
+// false = 間違い
+//
+// type:
+// addCorrect  = 正しい足し算
+// addIncorrect = 間違った足し算
+// subCorrect  = 正しい引き算
+// subIncorrect = 間違った引き算
+
+const PREDEFINED_CALCULATION_SETS = [
+
+    // =======================
+    // セット1
+    // =======================
+
+    [
+        {
+            stimulus: "24 + 38 = 62",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "72 - 48 = 34",
+            answer: false,
+            type: "subIncorrect"
+        },
+        {
+            stimulus: "31 + 46 = 87",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "83 - 57 = 26",
+            answer: true,
+            type: "subCorrect"
+        }
+    ],
+
+    // =======================
+    // セット2
+    // =======================
+
+    [
+        {
+            stimulus: "84 - 56 = 38",
+            answer: false,
+            type: "subIncorrect"
+        },
+        {
+            stimulus: "27 + 45 = 72",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "91 - 64 = 27",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "32 + 49 = 71",
+            answer: false,
+            type: "addIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット3
+    // =======================
+
+    [
+        {
+            stimulus: "43 + 28 = 81",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "74 - 38 = 36",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "36 + 47 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "93 - 67 = 36",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット4
+    // =======================
+
+    [
+        {
+            stimulus: "82 - 57 = 25",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "28 + 54 = 82",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "35 + 47 = 72",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "71 - 46 = 35",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット5
+    // =======================
+
+    [
+        {
+            stimulus: "42 + 39 = 71",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "93 - 68 = 25",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "46 + 37 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "81 - 56 = 35",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット6
+    // =======================
+
+    [
+        {
+            stimulus: "82 - 59 = 23",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "58 + 24 = 82",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "34 + 48 = 92",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "94 - 69 = 35",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット7
+    // =======================
+
+    [
+        {
+            stimulus: "26 + 58 = 74",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "85 - 67 = 18",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "39 + 42 = 81",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "73 - 55 = 28",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット8
+    // =======================
+
+    [
+        {
+            stimulus: "91 - 74 = 17",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "25 + 48 = 73",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "47 + 26 = 83",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "82 - 65 = 27",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット9
+    // =======================
+
+    [
+        {
+            stimulus: "84 - 59 = 25",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "33 + 49 = 72",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "57 + 26 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "73 - 48 = 35",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット10
+    // =======================
+
+    [
+        {
+            stimulus: "45 + 28 = 63",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "92 - 76 = 16",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "34 + 49 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "81 - 65 = 26",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット11
+    // =======================
+
+    [
+        {
+            stimulus: "74 - 48 = 36",
+            answer: false,
+            type: "subIncorrect"
+        },
+        {
+            stimulus: "48 + 35 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "86 - 57 = 29",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "27 + 56 = 93",
+            answer: false,
+            type: "addIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット12
+    // =======================
+
+    [
+        {
+            stimulus: "36 + 48 = 74",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "82 - 56 = 36",
+            answer: false,
+            type: "subIncorrect"
+        },
+        {
+            stimulus: "29 + 43 = 72",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "91 - 65 = 26",
+            answer: true,
+            type: "subCorrect"
+        }
+    ],
+
+    // =======================
+    // セット13
+    // =======================
+
+    [
+        {
+            stimulus: "91 - 67 = 24",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "56 + 27 = 83",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "53 + 28 = 71",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "95 - 68 = 37",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット14
+    // =======================
+
+    [
+        {
+            stimulus: "52 + 29 = 71",
+            answer: false,
+            type: "addIncorrect"
+        },
+        {
+            stimulus: "87 - 59 = 28",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "38 + 44 = 82",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "93 - 68 = 35",
+            answer: false,
+            type: "subIncorrect"
+        }
+    ],
+
+    // =======================
+    // セット15
+    // =======================
+
+    [
+        {
+            stimulus: "83 - 58 = 35",
+            answer: false,
+            type: "subIncorrect"
+        },
+        {
+            stimulus: "67 + 24 = 91",
+            answer: true,
+            type: "addCorrect"
+        },
+        {
+            stimulus: "92 - 67 = 25",
+            answer: true,
+            type: "subCorrect"
+        },
+        {
+            stimulus: "35 + 48 = 73",
+            answer: false,
+            type: "addIncorrect"
+        }
+    ]
+
+];
 
 
 // ==================================================
@@ -549,47 +981,6 @@ function shuffleArray(array, random = Math.random) {
 
 
 // ==================================================
-// 固定乱数の生成
-// ==================================================
-
-function createSeededRandom(id) {
-
-    let seed = 0;
-
-    const text = String(id);
-
-    for (let i = 0; i < text.length; i++) {
-
-        seed = (
-            seed * 31 +
-            text.charCodeAt(i)
-        ) >>> 0;
-
-    }
-
-    if (seed === 0) {
-        seed = 1;
-    }
-
-
-    return function () {
-
-        seed ^= seed << 13;
-
-        seed ^= seed >>> 17;
-
-        seed ^= seed << 5;
-
-        return (
-            seed >>> 0
-        ) / 4294967296;
-
-    };
-
-}
-
-
-// ==================================================
 // 待機条件の生成
 // ==================================================
 
@@ -652,274 +1043,24 @@ function getAssignedSetIndex(conditionArrayIndex) {
 
 
 // ==================================================
-// 計算問題の候補を生成
-// ==================================================
-
-function createCalculationPools() {
-
-    const addCorrect = [];
-
-    const addIncorrect = [];
-
-    const subCorrect = [];
-
-    const subIncorrect = [];
-
-
-    const seen = new Set();
-
-
-    function addProblem(
-        pool,
-        stimulus,
-        answer
-    ) {
-
-        if (seen.has(stimulus)) {
-            return;
-        }
-
-        seen.add(stimulus);
-
-        pool.push({
-
-            stimulus: stimulus,
-
-            answer: answer
-
-        });
-
-    }
-
-
-    // --------------------------------
-    // 問題生成
-    // --------------------------------
-
-    for (let a = 20; a <= 99; a++) {
-
-        for (let b = 20; b <= 99; b++) {
-
-
-            // =======================
-            // 足し算
-            // =======================
-
-            // 繰り上がりあり
-            // 答えは2桁
-
-            if (
-                (a % 10) + (b % 10) >= 10 &&
-                a + b <= 99
-            ) {
-
-                const ans = a + b;
-
-
-                // 正解問題
-
-                addProblem(
-
-                    addCorrect,
-
-                    `${a} + ${b} = ${ans}`,
-
-                    true
-
-                );
-
-
-                // 誤答問題（±10）
-
-                for (const wrong of [
-                    ans - 10,
-                    ans + 10
-                ]) {
-
-                    if (
-                        wrong >= 10 &&
-                        wrong <= 99
-                    ) {
-
-                        addProblem(
-
-                            addIncorrect,
-
-                            `${a} + ${b} = ${wrong}`,
-
-                            false
-
-                        );
-
-                    }
-
-                }
-
-            }
-
-
-            // =======================
-            // 引き算
-            // =======================
-
-            // 繰り下がりあり
-            // 答えは2桁
-
-            if (
-                a > b &&
-                (a % 10) < (b % 10) &&
-                a - b >= 10
-            ) {
-
-                const ans = a - b;
-
-
-                // 正解問題
-
-                addProblem(
-
-                    subCorrect,
-
-                    `${a} - ${b} = ${ans}`,
-
-                    true
-
-                );
-
-
-                // 誤答問題（±10）
-
-                for (const wrong of [
-                    ans - 10,
-                    ans + 10
-                ]) {
-
-                    if (
-                        wrong >= 10 &&
-                        wrong <= 99
-                    ) {
-
-                        addProblem(
-
-                            subIncorrect,
-
-                            `${a} - ${b} = ${wrong}`,
-
-                            false
-
-                        );
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-
-    return [
-
-        addCorrect,
-
-        addIncorrect,
-
-        subCorrect,
-
-        subIncorrect
-
-    ];
-
-}
-
-
-// ==================================================
-// 全参加者共通の固定問題15セットを生成
+// 固定問題15セットの読み込み
 // ==================================================
 
 function generateQuestions() {
 
-    // 参加者番号に関係なく同じ乱数
-    const random = createSeededRandom(
-        "CALCULATION_FIXED_SET_V1"
-    );
+    // 事前作成した問題をコピーする。
+    // 問題の自動生成やシャッフルは行わない。
 
-
-    const pools = createCalculationPools();
-
-
-    const selectedPools = [];
-
-
-    // --------------------------------
-    // 4種類からそれぞれ15問選ぶ
-    // --------------------------------
-
-    for (const pool of pools) {
-
-        const shuffled = shuffleArray(
-            pool,
-            random
+    conditionQuestionSets =
+        PREDEFINED_CALCULATION_SETS.map(
+            set => set.map(
+                question => ({ ...question })
+            )
         );
-
-
-        if (shuffled.length < 15) {
-
-            throw new Error(
-                "問題数が不足しています。"
-            );
-
-        }
-
-
-        selectedPools.push(
-            shuffled.slice(0, 15)
-        );
-
-    }
-
-
-    // --------------------------------
-    // 15セットを作成
-    // --------------------------------
-
-    const blocks = [];
-
-
-    for (let i = 0; i < 15; i++) {
-
-        const block = [
-
-            selectedPools[0][i],
-
-            selectedPools[1][i],
-
-            selectedPools[2][i],
-
-            selectedPools[3][i]
-
-        ];
-
-
-        // セット内の問題順を固定
-        blocks.push(
-            shuffleArray(block, random)
-        );
-
-    }
-
-
-    // セットの順番も固定
-    conditionQuestionSets = shuffleArray(
-        blocks,
-        random
-    );
 
 
     console.log(
-        "===== 全参加者共通の固定問題 ====="
+        "===== 事前作成した計算問題 ====="
     );
 
 
@@ -940,6 +1081,22 @@ function generateQuestions() {
         conditionQuestionSets.length
     );
 
+
+    // 問題数の確認
+
+    if (
+        conditionQuestionSets.length !== 15 ||
+        conditionQuestionSets.some(
+            set => set.length !== blockSize
+        )
+    ) {
+
+        throw new Error(
+            "計算問題のセット数または問題数が不正です。"
+        );
+
+    }
+
 }
 
 
@@ -956,16 +1113,31 @@ function generateBlockQuestions(setIndex = null) {
 
     if (setIndex === null) {
 
-        const pools = createCalculationPools();
+        const allQuestions =
+            conditionQuestionSets.flat();
+
+
+        const types = [
+            "addCorrect",
+            "addIncorrect",
+            "subCorrect",
+            "subIncorrect"
+        ];
 
 
         // 4種類から1問ずつランダムに選ぶ
 
-        blockQuestions = pools.map(pool => {
+        blockQuestions = types.map(type => {
+
+            const pool = allQuestions.filter(
+                question => question.type === type
+            );
+
 
             const randomIndex = Math.floor(
                 Math.random() * pool.length
             );
+
 
             return {
                 ...pool[randomIndex]
@@ -1662,7 +1834,7 @@ startButton.addEventListener(
 
 
         // =======================
-        // 固定問題15セットを生成
+        // 固定問題15セットを読み込み
         // =======================
 
         generateQuestions();
@@ -1743,3 +1915,4 @@ window.addEventListener(
 
     }
 );
+
