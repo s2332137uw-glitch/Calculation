@@ -1,7 +1,7 @@
 
 // ==================================================
 // 計算課題 main.js
-// 15セットの問題を事前に固定する方式
+// ベースライン専用4問 + 条件課題15セット
 // ==================================================
 
 
@@ -67,9 +67,8 @@ let results = [];
 // 保存設定
 // =======================
 
-// 新しい問題セット方式に合わせてバージョン変更
 const STORAGE_KEY =
-    "calculationExperimentAutosave_v4";
+    "calculationExperimentAutosave_v5";
 
 
 // =======================
@@ -115,7 +114,7 @@ let basePhase = true;
 // ベースラインの問題
 let baseQuestions = [];
 
-// 全参加者共通の固定問題15セット
+// 条件課題の固定問題15セット
 let conditionQuestionSets = [];
 
 // 現在表示している4問
@@ -152,24 +151,59 @@ let waitInterval = null;
 
 
 // ==================================================
-// 事前作成した計算問題15セット
+// ベースライン専用の固定問題4問
 // ==================================================
 
-// 問題はすべて事前に記述する。
+// 各種類を1問ずつ用意する。
+// 条件課題の15セットとは別の問題を使用する。
+
+const PREDEFINED_BASE_QUESTIONS = [
+
+    {
+        stimulus: "46 + 27 = 73",
+        answer: true,
+        type: "addCorrect"
+    },
+
+    {
+        stimulus: "38 + 45 = 75",
+        answer: false,
+        type: "addIncorrect"
+    },
+
+    {
+        stimulus: "92 - 57 = 35",
+        answer: true,
+        type: "subCorrect"
+    },
+
+    {
+        stimulus: "81 - 46 = 25",
+        answer: false,
+        type: "subIncorrect"
+    }
+
+];
+
+
+// ==================================================
+// 条件課題用の固定問題15セット
+// ==================================================
+
 // 各セットには以下の4種類を1問ずつ入れる。
 // ・正しい足し算
 // ・間違った足し算
 // ・正しい引き算
 // ・間違った引き算
-//
+
 // answer:
 // true  = 正しい
 // false = 間違い
-//
+
 // type:
-// addCorrect  = 正しい足し算
+// addCorrect   = 正しい足し算
 // addIncorrect = 間違った足し算
-// subCorrect  = 正しい引き算
+// subCorrect   = 正しい引き算
 // subIncorrect = 間違った引き算
 
 const PREDEFINED_CALCULATION_SETS = [
@@ -1113,45 +1147,23 @@ function generateBlockQuestions(setIndex = null) {
 
     if (setIndex === null) {
 
-        const allQuestions =
-            conditionQuestionSets.flat();
+        // ベースライン専用の4問を使用する。
+        // 15セットからの抽出は行わない。
 
-
-        const types = [
-            "addCorrect",
-            "addIncorrect",
-            "subCorrect",
-            "subIncorrect"
-        ];
-
-
-        // 4種類から1問ずつランダムに選ぶ
-
-        blockQuestions = types.map(type => {
-
-            const pool = allQuestions.filter(
-                question => question.type === type
+        blockQuestions =
+            PREDEFINED_BASE_QUESTIONS.map(
+                question => ({ ...question })
             );
 
 
-            const randomIndex = Math.floor(
-                Math.random() * pool.length
-            );
-
-
-            return {
-                ...pool[randomIndex]
-            };
-
-        });
-
-
-        // 問題順もランダム
+        // 出題順だけランダムにする。
 
         blockQuestions = shuffleArray(
             blockQuestions
         );
 
+
+        // ベースラインの問題を保存
 
         baseQuestions = blockQuestions.map(
             question => ({ ...question })
@@ -1825,6 +1837,10 @@ startButton.addEventListener(
 
         currentAnswer = false;
 
+        baseQuestions = [];
+
+        blockQuestions = [];
+
 
         // =======================
         // 待機条件を生成
@@ -1841,7 +1857,7 @@ startButton.addEventListener(
 
 
         // =======================
-        // ベースライン4問を生成
+        // ベースライン専用4問を準備
         // =======================
 
         generateBlockQuestions();
@@ -1915,4 +1931,3 @@ window.addEventListener(
 
     }
 );
-
