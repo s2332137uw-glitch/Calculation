@@ -1,46 +1,26 @@
 
 // =======================
-// 画面
+// 画面の取得
 // =======================
 
-const participantScreen =
-    document.getElementById("participantScreen");
+const participantScreen = document.getElementById("participantScreen");
+const participantIdInput = document.getElementById("participantId");
+const participantNextButton = document.getElementById("participantNextButton");
 
-const participantIdInput =
-    document.getElementById("participantId");
+const startButton = document.getElementById("startButton");
+const startScreen = document.getElementById("startScreen");
 
-const participantNextButton =
-    document.getElementById("participantNextButton");
+const questionScreen = document.getElementById("questionScreen");
+const stimulus = document.getElementById("stimulus");
 
-const startButton =
-    document.getElementById("startButton");
+const yesButton = document.getElementById("yesButton");
+const noButton = document.getElementById("noButton");
 
-const startScreen =
-    document.getElementById("startScreen");
+const waitScreen = document.getElementById("waitScreen");
+const waitLabel = document.getElementById("waitLabel");
 
-const questionScreen =
-    document.getElementById("questionScreen");
-
-const stimulus =
-    document.getElementById("stimulus");
-
-const yesButton =
-    document.getElementById("yesButton");
-
-const noButton =
-    document.getElementById("noButton");
-
-const waitScreen =
-    document.getElementById("waitScreen");
-
-const waitLabel =
-    document.getElementById("waitLabel");
-
-const finishScreen =
-    document.getElementById("finishScreen");
-
-const downloadButton =
-    document.getElementById("downloadButton");
+const finishScreen = document.getElementById("finishScreen");
+const downloadButton = document.getElementById("downloadButton");
 
 
 // =======================
@@ -66,264 +46,10 @@ let questionActive = false;
 
 let results = [];
 
-
-// =======================
-// 自動保存・途中再開
-// =======================
-
-const STORAGE_KEY =
-    "calculationExperimentAutosave_v2";
-
-let nextStep = "participant";
+const STORAGE_KEY = "calculationExperimentAutosave_v3";
 
 let waitDeadline = null;
-let waitTimeout = null;
-let waitInterval = null;
-
-
-function saveProgress() {
-
-    const progress = {
-
-        participantId,
-        results,
-        conditions,
-        conditionIndex,
-        questionPool,
-        answerPool,
-        questions,
-        answers,
-        questionIndex,
-        basePhase,
-        nextStep,
-        waitDeadline
-
-    };
-
-    try {
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(progress)
-        );
-
-    } catch (error) {
-
-        console.error(
-            "自動保存に失敗しました：",
-            error
-        );
-
-        alert(
-            "結果の自動保存に失敗しました。" +
-            "CSVを保存してください。"
-        );
-
-    }
-
-}
-
-
-function clearProgress() {
-
-    try {
-
-        localStorage.removeItem(STORAGE_KEY);
-
-    } catch (error) {
-
-        console.error(
-            "自動保存データを削除できませんでした：",
-            error
-        );
-
-    }
-
-}
-
-
-function stopWaitTimer() {
-
-    if (waitTimeout !== null) {
-
-        clearTimeout(waitTimeout);
-        waitTimeout = null;
-
-    }
-
-    if (waitInterval !== null) {
-
-        clearInterval(waitInterval);
-        waitInterval = null;
-
-    }
-
-}
-
-
-function restoreProgress(progress) {
-
-    participantId = progress.participantId || "";
-
-    results = Array.isArray(progress.results)
-        ? progress.results
-        : [];
-
-    conditions = Array.isArray(progress.conditions)
-        ? progress.conditions
-        : [];
-
-    conditionIndex =
-        Number.isInteger(progress.conditionIndex)
-            ? progress.conditionIndex
-            : 0;
-
-    questionPool = progress.questionPool || [];
-    answerPool = progress.answerPool || [];
-
-    questions = progress.questions || [];
-    answers = progress.answers || [];
-
-    questionIndex =
-        Number.isInteger(progress.questionIndex)
-            ? progress.questionIndex
-            : 0;
-
-    basePhase = progress.basePhase !== false;
-
-    nextStep = progress.nextStep || "question";
-
-    waitDeadline = progress.waitDeadline || null;
-
-    participantIdInput.value = participantId;
-
-    // 全画面を一度非表示にする
-    participantScreen.style.display = "none";
-    startScreen.style.display = "none";
-    questionScreen.style.display = "none";
-    waitScreen.style.display = "none";
-    finishScreen.style.display = "none";
-
-    // 実験終了後
-    if (nextStep === "finish") {
-
-        finishScreen.style.display = "block";
-
-        downloadButton.style.display = "inline-block";
-
-        return;
-
-    }
-
-    // 待機中だった場合
-    if (
-        nextStep === "waitBase" ||
-        nextStep === "waitCondition"
-    ) {
-
-        const remainingMs = waitDeadline
-            ? Math.max(0, waitDeadline - Date.now())
-            : null;
-
-        startWaitScreen(remainingMs);
-
-        return;
-
-    }
-
-    // 問題回答中だった場合
-    if (
-        nextStep === "question" &&
-        questionIndex < questions.length
-    ) {
-
-        questionScreen.style.display = "block";
-
-        showQuestion();
-
-        return;
-
-    }
-
-    // その他の場合
-    participantScreen.style.display = "block";
-
-}
-
-
-function checkForSavedProgress() {
-
-    let savedText;
-
-    try {
-
-        savedText = localStorage.getItem(STORAGE_KEY);
-
-    } catch (error) {
-
-        console.error(
-            "自動保存データを読み込めませんでした：",
-            error
-        );
-
-        return;
-
-    }
-
-    if (!savedText) return;
-
-    try {
-
-        const progress = JSON.parse(savedText);
-
-        if (
-            !progress.participantId ||
-            !Array.isArray(progress.results)
-        ) {
-
-            clearProgress();
-
-            return;
-
-        }
-
-        const resume = confirm(
-
-            "前回の実験データが保存されています。\n" +
-            "参加者番号：" + progress.participantId + "\n" +
-            "回答済み：" + progress.results.length + "問\n\n" +
-            "OK：途中から再開する\n" +
-            "キャンセル：保存データを削除する"
-
-        );
-
-        if (resume) {
-
-            restoreProgress(progress);
-
-        } else {
-
-            clearProgress();
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "保存データを読み込めませんでした：",
-            error
-        );
-
-        clearProgress();
-
-        alert(
-            "保存データを読み込めなかったため、" +
-            "新しく実験を開始します。"
-        );
-
-    }
-
-}
+let currentScreenName = "participant";
 
 
 // =======================
@@ -344,45 +70,413 @@ const waitTimes = [
     35
 ];
 
-let conditions = [];
-
-let conditionIndex = 0;
-
-
-// =======================
-// 問題設定
-// =======================
-
-// 1ブロック4問
 const blockSize = 4;
 
-// ベースライン1ブロック
-// 条件課題15ブロック
-const totalBlocks = 16;
-
-// 合計64問
-const totalQuestions =
-    blockSize * totalBlocks;
-
-
-// =======================
-// 問題データ
-// =======================
-
-let questionPool = [];
-let answerPool = [];
-
-let questions = [];
-let answers = [];
-
+let conditions = [];
+let conditionIndex = 0;
 let questionIndex = 0;
 
-
-// =======================
-// ベース課題かどうか
-// =======================
-
 let basePhase = true;
+
+let blockQuestions = [];
+let baseQuestions = [];
+let conditionQuestionSets = [];
+
+let currentSetNumber = null;
+
+let waitTimeout = null;
+let waitInterval = null;
+
+
+// =======================
+// 画面表示
+// =======================
+
+function showScreen(screen) {
+
+    if (screen === participantScreen) {
+        currentScreenName = "participant";
+    } else if (screen === startScreen) {
+        currentScreenName = "start";
+    } else if (screen === questionScreen) {
+        currentScreenName = "question";
+    } else if (screen === waitScreen) {
+        currentScreenName = "wait";
+    } else if (screen === finishScreen) {
+        currentScreenName = "finish";
+    }
+
+    const screens = [
+        participantScreen,
+        startScreen,
+        questionScreen,
+        waitScreen,
+        finishScreen
+    ];
+
+    screens.forEach(element => {
+        if (element) {
+            element.style.display = "none";
+        }
+    });
+
+    screen.style.display = "block";
+
+}
+
+
+// =======================
+// 自動保存
+// =======================
+
+function saveProgress() {
+
+    try {
+
+        const state = {
+
+            participantId,
+            results,
+            conditions,
+            conditionIndex,
+            questionIndex,
+            basePhase,
+
+            blockQuestions,
+            baseQuestions,
+            conditionQuestionSets,
+
+            currentSetNumber,
+
+            currentStimulus,
+            currentAnswer,
+            questionActive,
+
+            currentScreenName,
+            waitDeadline,
+
+            savedAt: new Date().toISOString()
+
+        };
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(state)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "実験データの自動保存に失敗しました。",
+            error
+        );
+
+        alert(
+            "実験データの自動保存に失敗しました。" +
+            "CSVを保存してください。"
+        );
+
+    }
+
+}
+
+
+// =======================
+// 保存データの取得
+// =======================
+
+function getSavedProgress() {
+
+    try {
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+
+        return saved ? JSON.parse(saved) : null;
+
+    } catch (error) {
+
+        console.error(
+            "保存データを読み込めませんでした。",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+// =======================
+// 保存データの削除
+// =======================
+
+function clearSavedProgress() {
+
+    try {
+
+        localStorage.removeItem(STORAGE_KEY);
+
+    } catch (error) {
+
+        console.error(
+            "保存データを削除できませんでした。",
+            error
+        );
+
+    }
+
+}
+
+
+// =======================
+// タイマー解除
+// =======================
+
+function stopWaitTimer() {
+
+    if (waitTimeout !== null) {
+
+        clearTimeout(waitTimeout);
+        waitTimeout = null;
+
+    }
+
+    if (waitInterval !== null) {
+
+        clearInterval(waitInterval);
+        waitInterval = null;
+
+    }
+
+}
+
+
+// =======================
+// 途中再開
+// =======================
+
+function restoreProgress(state) {
+
+    participantId = state.participantId || "";
+
+    results = Array.isArray(state.results)
+        ? state.results
+        : [];
+
+    conditions = Array.isArray(state.conditions)
+        ? state.conditions
+        : [];
+
+    conditionIndex =
+        Number.isInteger(state.conditionIndex)
+            ? state.conditionIndex
+            : 0;
+
+    questionIndex =
+        Number.isInteger(state.questionIndex)
+            ? state.questionIndex
+            : 0;
+
+    basePhase = state.basePhase !== false;
+
+    blockQuestions = Array.isArray(state.blockQuestions)
+        ? state.blockQuestions
+        : [];
+
+    baseQuestions = Array.isArray(state.baseQuestions)
+        ? state.baseQuestions
+        : [];
+
+    conditionQuestionSets =
+        Array.isArray(state.conditionQuestionSets)
+            ? state.conditionQuestionSets
+            : [];
+
+    currentSetNumber = state.currentSetNumber ?? null;
+
+    currentStimulus = state.currentStimulus || "";
+    currentAnswer = Boolean(state.currentAnswer);
+
+    // 再開時は反応時間を新しく計測する
+    questionActive = false;
+
+    waitDeadline = state.waitDeadline || null;
+
+    participantIdInput.value = participantId;
+
+
+    // 実験終了後
+    if (state.currentScreenName === "finish") {
+
+        showScreen(finishScreen);
+
+        downloadButton.style.display = "inline-block";
+
+        return;
+
+    }
+
+
+    // 待機中
+    if (
+        state.currentScreenName === "wait" &&
+        waitDeadline !== null &&
+        conditions[conditionIndex]
+    ) {
+
+        const remainingMs = Math.max(
+            0,
+            waitDeadline - Date.now()
+        );
+
+        startWaitScreen(remainingMs);
+
+        return;
+
+    }
+
+
+    // 問題回答中
+    if (
+        state.currentScreenName === "question" &&
+        blockQuestions.length > 0 &&
+        questionIndex < blockQuestions.length
+    ) {
+
+        stimulus.textContent = currentStimulus;
+
+        showScreen(questionScreen);
+
+        questionActive = true;
+
+        yesButton.disabled = false;
+        noButton.disabled = false;
+
+        startTime = performance.now();
+
+        saveProgress();
+
+        return;
+
+    }
+
+
+    // 開始画面
+    showScreen(startScreen);
+
+    saveProgress();
+
+}
+
+
+// =======================
+// 起動時の保存データ確認
+// =======================
+
+function checkForSavedProgress() {
+
+    const saved = getSavedProgress();
+
+    if (
+        !saved ||
+        !saved.participantId ||
+        !Array.isArray(saved.results)
+    ) {
+
+        return;
+
+    }
+
+    const shouldResume = confirm(
+
+        "前回の計算課題の保存データがあります。\n" +
+        "参加者番号：" + saved.participantId + "\n" +
+        "保存済み回答数：" + saved.results.length + "問\n\n" +
+        "OK：続きから再開する\n" +
+        "キャンセル：保存データを削除して新しく開始する"
+
+    );
+
+    if (shouldResume) {
+
+        restoreProgress(saved);
+
+    } else {
+
+        clearSavedProgress();
+
+        showScreen(participantScreen);
+
+    }
+
+}
+
+
+// =======================
+// 条件生成
+// =======================
+
+function generateConditions() {
+
+    conditions = [];
+
+    let id = 1;
+
+    for (const mode of modes) {
+
+        for (const time of waitTimes) {
+
+            conditions.push({
+
+                id: id++,
+
+                mode: mode,
+
+                waitTime: time
+
+            });
+
+        }
+
+    }
+
+    conditions = shuffleArray(conditions);
+
+    console.log("===== 待機条件 =====");
+
+    console.table(conditions);
+
+}
+
+
+// =======================
+// 配列のシャッフル
+// =======================
+
+function shuffleArray(array, random = Math.random) {
+
+    const shuffled = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+
+        const j = Math.floor(
+            random() * (i + 1)
+        );
+
+        [
+            shuffled[i],
+            shuffled[j]
+        ] = [
+            shuffled[j],
+            shuffled[i]
+        ];
+
+    }
+
+    return shuffled;
+
+}
 
 
 // =======================
@@ -422,75 +516,6 @@ function createSeededRandom(id) {
 
 
 // =======================
-// 条件生成
-// =======================
-
-function generateConditions() {
-
-    conditions = [];
-
-    let id = 1;
-
-    for (const mode of modes) {
-
-        for (const time of waitTimes) {
-
-            conditions.push({
-
-                id: id++,
-
-                mode: mode,
-
-                waitTime: time
-
-            });
-
-        }
-
-    }
-
-    // 待機条件だけをシャッフル
-    for (
-        let i = conditions.length - 1;
-        i > 0;
-        i--
-    ) {
-
-        const j = Math.floor(
-            Math.random() * (i + 1)
-        );
-
-        [
-            conditions[i],
-            conditions[j]
-        ] = [
-            conditions[j],
-            conditions[i]
-        ];
-
-    }
-
-    console.log("===== 条件一覧 =====");
-
-    conditions.forEach((condition, index) => {
-
-        console.log(
-
-            (index + 1) +
-            " : " +
-            condition.mode +
-            " " +
-            condition.waitTime +
-            "秒"
-
-        );
-
-    });
-
-}
-
-
-// =======================
 // 問題セットの割り当て
 // =======================
 
@@ -500,11 +525,9 @@ function generateConditions() {
 
 function getAssignedSetIndex(conditionArrayIndex) {
 
-    const participantNumber =
-        Number(participantId);
+    const participantNumber = Number(participantId);
 
-    const offset =
-        (participantNumber - 1) % 15;
+    const offset = (participantNumber - 1) % 15;
 
     return (
         conditionArrayIndex - offset + 15
@@ -514,64 +537,31 @@ function getAssignedSetIndex(conditionArrayIndex) {
 
 
 // =======================
-// 計算問題生成
+// 計算問題の生成
 // =======================
 
 function generateQuestions() {
 
-    // 参加者番号に基づいた乱数
-    const random =
-        createSeededRandom(participantId);
+    const random = createSeededRandom(participantId);
 
 
-    // =======================
-    // シャッフル関数
-    // =======================
-
-    function shuffle(array) {
-
-        for (
-            let i = array.length - 1;
-            i > 0;
-            i--
-        ) {
-
-            const j = Math.floor(
-                random() * (i + 1)
-            );
-
-            [
-                array[i],
-                array[j]
-            ] = [
-                array[j],
-                array[i]
-            ];
-
-        }
-
-        return array;
-
-    }
-
-
-    // =======================
-    // 問題を4種類に分ける
-    // =======================
-
+    // 問題の種類ごとに分類
     const addCorrect = [];
     const addIncorrect = [];
 
     const subCorrect = [];
     const subIncorrect = [];
 
-    // 問題の重複を防ぐ
+
+    // 重複防止
     const seen = new Set();
 
 
     function addProblem(pool, stimulus, answer) {
 
-        if (seen.has(stimulus)) return;
+        if (seen.has(stimulus)) {
+            return;
+        }
 
         seen.add(stimulus);
 
@@ -587,7 +577,7 @@ function generateQuestions() {
 
 
     // =======================
-    // 問題を生成
+    // 問題生成
     // =======================
 
     for (let a = 20; a <= 99; a++) {
@@ -595,10 +585,7 @@ function generateQuestions() {
         for (let b = 20; b <= 99; b++) {
 
 
-            // =======================
-            // 足し算：繰り上がりあり
-            // 答えは2桁
-            // =======================
+            // 足し算：繰り上がりあり・正解2桁
 
             if (
                 (a % 10) + (b % 10) >= 10 &&
@@ -608,23 +595,15 @@ function generateQuestions() {
                 const ans = a + b;
 
                 addProblem(
-
                     addCorrect,
-
                     `${a} + ${b} = ${ans}`,
-
                     true
-
                 );
 
 
-                // 誤答は正解の±10
-                for (
-                    const wrong of [
-                        ans - 10,
-                        ans + 10
-                    ]
-                ) {
+                // 誤答：正解の±10
+
+                for (const wrong of [ans - 10, ans + 10]) {
 
                     if (
                         wrong >= 10 &&
@@ -632,13 +611,9 @@ function generateQuestions() {
                     ) {
 
                         addProblem(
-
                             addIncorrect,
-
                             `${a} + ${b} = ${wrong}`,
-
                             false
-
                         );
 
                     }
@@ -648,10 +623,7 @@ function generateQuestions() {
             }
 
 
-            // =======================
-            // 引き算：繰り下がりあり
-            // 答えは2桁
-            // =======================
+            // 引き算：繰り下がりあり・正解2桁
 
             if (
                 a > b &&
@@ -662,23 +634,15 @@ function generateQuestions() {
                 const ans = a - b;
 
                 addProblem(
-
                     subCorrect,
-
                     `${a} - ${b} = ${ans}`,
-
                     true
-
                 );
 
 
-                // 誤答は正解の±10
-                for (
-                    const wrong of [
-                        ans - 10,
-                        ans + 10
-                    ]
-                ) {
+                // 誤答：正解の±10
+
+                for (const wrong of [ans - 10, ans + 10]) {
 
                     if (
                         wrong >= 10 &&
@@ -686,13 +650,9 @@ function generateQuestions() {
                     ) {
 
                         addProblem(
-
                             subIncorrect,
-
                             `${a} - ${b} = ${wrong}`,
-
                             false
-
                         );
 
                     }
@@ -707,8 +667,7 @@ function generateQuestions() {
 
 
     // =======================
-    // 各種類から16問ずつ選ぶ
-    // 合計64問
+    // 4種類の問題
     // =======================
 
     const pools = [
@@ -739,33 +698,35 @@ function generateQuestions() {
     const selectedPools = [];
 
 
+    // 各種類から16問ずつ選ぶ
+
     for (const pool of pools) {
 
-        shuffle(pool.data);
+        const shuffled = shuffleArray(
+            pool.data,
+            random
+        );
 
-        if (pool.data.length < 16) {
+        if (shuffled.length < 16) {
 
             throw new Error(
-
                 pool.name +
                 "の問題が16問未満です：" +
-                pool.data.length +
+                shuffled.length +
                 "問"
-
             );
 
         }
 
         selectedPools.push(
-            pool.data.slice(0, 16)
+            shuffled.slice(0, 16)
         );
 
     }
 
 
     // =======================
-    // 4問ずつのブロックを作成
-    // 各ブロックに4種類を1問ずつ入れる
+    // 16ブロックを作成
     // =======================
 
     const blocks = [];
@@ -784,101 +745,94 @@ function generateQuestions() {
 
         ];
 
-        shuffle(block);
+        // セット内の順番を固定するため
+        // 参加者番号に基づく乱数でシャッフル
 
-        blocks.push(block);
-
-    }
-
-
-    // ブロックの順番もシャッフル
-    shuffle(blocks);
-
-
-    // =======================
-    // 実験で使用する配列に格納
-    // =======================
-
-    questionPool = [];
-    answerPool = [];
-
-    questions = [];
-    answers = [];
-
-
-    for (const block of blocks) {
-
-        for (const problem of block) {
-
-            questionPool.push(
-                problem.stimulus
-            );
-
-            answerPool.push(
-                problem.answer
-            );
-
-            questions.push(
-                problem.stimulus
-            );
-
-            answers.push(
-                problem.answer
-            );
-
-        }
-
-    }
-
-
-    // =======================
-    // 問題構成を確認
-    // =======================
-
-    console.log("===== 問題構成 =====");
-
-    console.log(
-        "合計問題数：",
-        questions.length
-    );
-
-    console.log(
-        "正しい問題：",
-        answers.filter(answer => answer).length
-    );
-
-    console.log(
-        "間違った問題：",
-        answers.filter(answer => !answer).length
-    );
-
-    console.log(
-        "足し算：",
-        questions.filter(q => q.includes("+")).length
-    );
-
-    console.log(
-        "引き算：",
-        questions.filter(q => q.includes("-")).length
-    );
-
-
-    console.log("===== ブロック別の問題 =====");
-
-    for (let i = 0; i < 16; i++) {
-
-        console.log(
-
-            `ブロック${i + 1}`,
-
-            questions.slice(
-                i * 4,
-                i * 4 + 4
-            )
-
+        blocks.push(
+            shuffleArray(block, random)
         );
 
     }
+
+
+    // ブロックの順番も参加者番号に基づいて決定
+
+    const shuffledBlocks = shuffleArray(
+        blocks,
+        random
+    );
+
+
+    // =======================
+    // ベースラインと条件課題に分ける
+    // =======================
+
+    baseQuestions = shuffledBlocks[0].map(
+        problem => ({ ...problem })
+    );
+
+    conditionQuestionSets = shuffledBlocks
+        .slice(1)
+        .map(block =>
+            block.map(problem => ({ ...problem }))
+        );
+
+
+    console.log("===== 問題構成 =====");
+
+    console.log("ベースライン：", baseQuestions);
+
+    console.log(
+        "条件課題セット数：",
+        conditionQuestionSets.length
+    );
+
+    console.log("===== 条件課題の問題セット =====");
+
+    conditionQuestionSets.forEach((set, index) => {
+
+        console.log(
+            `セット${index + 1}`,
+            set
+        );
+
+    });
+
+}
+
+
+// =======================
+// 4問分の問題を準備
+// =======================
+
+function generateBlockQuestions(setIndex = null) {
+
+    // ベースライン
+    if (setIndex === null) {
+
+        blockQuestions = baseQuestions.map(
+            question => ({ ...question })
+        );
+
+        currentSetNumber = null;
+
+    }
+
+    // 条件課題
+    else {
+
+        blockQuestions =
+            conditionQuestionSets[setIndex].map(
+                question => ({ ...question })
+            );
+
+        currentSetNumber = setIndex + 1;
+
+    }
+
+    questionIndex = 0;
+
+    saveProgress();
 
 }
 
@@ -887,30 +841,28 @@ function generateQuestions() {
 // 問題表示
 // =======================
 
-function showQuestion() {
+function generateQuestion() {
 
-    if (questionIndex >= questions.length) {
+    if (questionIndex >= blockQuestions.length) {
         return;
     }
 
-    currentStimulus =
-        questions[questionIndex];
+    const question = blockQuestions[questionIndex];
 
-    currentAnswer =
-        answers[questionIndex];
+    currentStimulus = question.stimulus;
 
-    stimulus.textContent =
-        currentStimulus;
+    currentAnswer = question.answer;
+
+    stimulus.textContent = currentStimulus;
 
     questionActive = true;
 
     yesButton.disabled = false;
     noButton.disabled = false;
 
-    // 反応時間計測開始
     startTime = performance.now();
 
-    nextStep = "question";
+    showScreen(questionScreen);
 
     saveProgress();
 
@@ -930,48 +882,39 @@ function startWaitScreen(remainingMs = null) {
 
     stopWaitTimer();
 
-    const currentCondition =
-        conditions[conditionIndex];
+
+    // 現在の条件を取得
+    const currentCondition = conditions[conditionIndex];
 
     if (!currentCondition) {
         return;
     }
 
-    const waitTime =
-        currentCondition.waitTime;
+    const waitTime = currentCondition.waitTime;
 
-    const mode =
-        currentCondition.mode;
+    const mode = currentCondition.mode;
 
-    const totalWaitMs =
-        waitTime * 1000;
+    const totalWaitMs = waitTime * 1000;
 
     const actualRemainingMs =
         remainingMs === null
             ? totalWaitMs
             : Math.max(0, remainingMs);
 
-    waitDeadline =
-        Date.now() + actualRemainingMs;
+    waitDeadline = Date.now() + actualRemainingMs;
 
-    nextStep = basePhase
-        ? "waitBase"
-        : "waitCondition";
-
-    questionScreen.style.display = "none";
-    waitScreen.style.display = "block";
+    showScreen(waitScreen);
 
     saveProgress();
 
 
     // =======================
-    // 表示なし
+    // 表示方法なし
     // =======================
 
     if (mode === "none") {
 
-        waitLabel.textContent =
-            "お待ちください";
+        waitLabel.textContent = "お待ちください";
 
     }
 
@@ -985,13 +928,10 @@ function startWaitScreen(remainingMs = null) {
         const updateRemaining = () => {
 
             const remain = Math.max(
-
                 0,
-
                 Math.ceil(
                     (waitDeadline - Date.now()) / 1000
                 )
-
             );
 
             waitLabel.textContent =
@@ -1018,11 +958,8 @@ function startWaitScreen(remainingMs = null) {
         const updateElapsed = () => {
 
             const elapsedSeconds = Math.max(
-
                 0,
-
                 Math.floor(
-
                     (
                         totalWaitMs -
                         Math.max(
@@ -1030,20 +967,12 @@ function startWaitScreen(remainingMs = null) {
                             waitDeadline - Date.now()
                         )
                     ) / 1000
-
                 )
-
             );
 
             waitLabel.textContent =
-
                 "経過時間：" +
-
-                Math.min(
-                    waitTime,
-                    elapsedSeconds
-                ) +
-
+                Math.min(waitTime, elapsedSeconds) +
                 "秒";
 
         };
@@ -1069,72 +998,14 @@ function startWaitScreen(remainingMs = null) {
         waitDeadline = null;
 
 
-        // =======================
-        // ベース課題終了後
-        // =======================
+        // 次の条件に対応する問題セットを取得
 
-        if (basePhase) {
+        const setIndex =
+            getAssignedSetIndex(conditionIndex);
 
-            basePhase = false;
+        generateBlockQuestions(setIndex);
 
-            const setIndex =
-                getAssignedSetIndex(conditionIndex);
-
-            // ブロック1～15のどれかを選択
-            questionIndex =
-                (setIndex + 1) * blockSize;
-
-            nextStep = "question";
-
-            waitScreen.style.display = "none";
-            questionScreen.style.display = "block";
-
-            saveProgress();
-
-            showQuestion();
-
-            return;
-
-        }
-
-
-        // =======================
-        // 条件課題
-        // =======================
-
-        if (conditionIndex < conditions.length) {
-
-            const setIndex =
-                getAssignedSetIndex(conditionIndex);
-
-            questionIndex =
-                (setIndex + 1) * blockSize;
-
-            nextStep = "question";
-
-            waitScreen.style.display = "none";
-            questionScreen.style.display = "block";
-
-            saveProgress();
-
-            showQuestion();
-
-            return;
-
-        }
-
-
-        // =======================
-        // 全条件終了
-        // =======================
-
-        nextStep = "finish";
-
-        waitScreen.style.display = "none";
-        questionScreen.style.display = "none";
-        finishScreen.style.display = "block";
-
-        downloadButton.style.display = "inline-block";
+        generateQuestion();
 
         saveProgress();
 
@@ -1144,17 +1015,13 @@ function startWaitScreen(remainingMs = null) {
 
 
 // =======================
-// 正解判定・結果保存
+// 回答判定・記録
 // =======================
 
 function checkAnswer(userPressedYes) {
 
-    // 二重回答を防止
+    // 二重回答防止
     if (!questionActive) {
-        return;
-    }
-
-    if (questionIndex >= questions.length) {
         return;
     }
 
@@ -1164,94 +1031,82 @@ function checkAnswer(userPressedYes) {
     noButton.disabled = true;
 
 
-    // =======================
     // 反応時間
-    // =======================
-
     const reactionTime =
         performance.now() - startTime;
 
 
-    // =======================
-    // 正解判定
-    // =======================
-
+    // 正誤判定
     const correct =
-        userPressedYes === answers[questionIndex];
+        userPressedYes === currentAnswer;
+
+
+    const phase =
+        basePhase ? "base" : "condition";
+
+    const mode =
+        basePhase
+            ? "none"
+            : conditions[conditionIndex].mode;
+
+    const waitTime =
+        basePhase
+            ? 0
+            : conditions[conditionIndex].waitTime;
 
 
     // =======================
     // 結果を記録
     // =======================
 
-    const assignedSetIndex =
-        basePhase
-            ? null
-            : getAssignedSetIndex(conditionIndex);
-
-
     results.push({
 
         participantId: participantId,
 
-        phase: basePhase
-            ? "base"
-            : "condition",
+        phase: phase,
 
         task: "CALCULATION",
 
-        stimulus: questions[questionIndex],
+        stimulus: currentStimulus,
 
-        response: userPressedYes
-            ? "YES"
-            : "NO",
+        response: userPressedYes ? "YES" : "NO",
 
         correct: correct,
 
         reactionTime: reactionTime.toFixed(1),
 
-        mode: basePhase
-            ? "none"
-            : conditions[conditionIndex].mode,
+        mode: mode,
 
-        waitTime: basePhase
-            ? 0
-            : conditions[conditionIndex].waitTime,
+        waitTime: waitTime,
 
-        condition: basePhase
-            ? "base"
-            : conditions[conditionIndex].id,
+        condition:
+            basePhase
+                ? "base"
+                : conditions[conditionIndex].id,
 
-        conditionOrder: basePhase
-            ? "base"
-            : conditionIndex + 1,
+        conditionOrder:
+            basePhase
+                ? "base"
+                : conditionIndex + 1,
 
-        setNumber: basePhase
-            ? "base"
-            : assignedSetIndex + 1,
+        setNumber:
+            basePhase
+                ? "base"
+                : currentSetNumber,
 
-        questionNumber:
-            (questionIndex % blockSize) + 1
+        questionNumber: questionIndex + 1
 
     });
 
 
-    console.log(
-        results[results.length - 1]
-    );
+    console.log(results[results.length - 1]);
 
 
-    // =======================
-    // 次の問題番号へ
-    // =======================
-
+    // 次の問題へ
     questionIndex++;
 
 
-    // =======================
     // 回答直後に保存
-    // =======================
-
     saveProgress();
 
 
@@ -1259,18 +1114,16 @@ function checkAnswer(userPressedYes) {
     // 4問終了後
     // =======================
 
-    if (questionIndex % blockSize === 0) {
+    if (questionIndex >= blockSize) {
 
 
-        // =======================
         // ベースライン終了
-        // =======================
 
         if (basePhase) {
 
-            nextStep = "waitBase";
+            basePhase = false;
 
-            saveProgress();
+            conditionIndex = 0;
 
             startWaitScreen();
 
@@ -1279,39 +1132,28 @@ function checkAnswer(userPressedYes) {
         }
 
 
-        // =======================
         // 最後の条件終了
-        // =======================
 
-        if (
-            conditionIndex ===
-            conditions.length - 1
-        ) {
+        if (conditionIndex === conditions.length - 1) {
 
-            nextStep = "finish";
+            questionActive = false;
 
-            saveProgress();
+            waitDeadline = null;
 
-            questionScreen.style.display = "none";
-            waitScreen.style.display = "none";
-            finishScreen.style.display = "block";
+            showScreen(finishScreen);
 
             downloadButton.style.display = "inline-block";
+
+            saveProgress();
 
             return;
 
         }
 
 
-        // =======================
         // 次の条件へ
-        // =======================
 
         conditionIndex++;
-
-        nextStep = "waitCondition";
-
-        saveProgress();
 
         startWaitScreen();
 
@@ -1320,15 +1162,9 @@ function checkAnswer(userPressedYes) {
     }
 
 
-    // =======================
-    // ブロック途中
-    // =======================
+    // 4問未満なら次の問題
 
-    nextStep = "question";
-
-    saveProgress();
-
-    showQuestion();
+    generateQuestion();
 
 }
 
@@ -1347,10 +1183,6 @@ function downloadCSV() {
 
     }
 
-
-    // =======================
-    // CSVの見出し
-    // =======================
 
     const headers = [
 
@@ -1383,9 +1215,7 @@ function downloadCSV() {
     ];
 
 
-    // =======================
     // CSV用の文字列変換
-    // =======================
 
     function escapeCSV(value) {
 
@@ -1397,14 +1227,8 @@ function downloadCSV() {
 
 
     let csv =
-        "\uFEFF" +
-        headers.map(escapeCSV).join(",") +
-        "\r\n";
+        headers.map(escapeCSV).join(",") + "\r\n";
 
-
-    // =======================
-    // 結果をCSVに追加
-    // =======================
 
     results.forEach(result => {
 
@@ -1419,13 +1243,10 @@ function downloadCSV() {
     });
 
 
-    // =======================
-    // CSVファイル作成
-    // =======================
-
+    // Excel用BOM
     const blob = new Blob(
 
-        [csv],
+        ["\uFEFF" + csv],
 
         {
             type: "text/csv;charset=utf-8;"
@@ -1434,15 +1255,9 @@ function downloadCSV() {
     );
 
 
-    // =======================
-    // ダウンロード
-    // =======================
+    const url = URL.createObjectURL(blob);
 
-    const url =
-        URL.createObjectURL(blob);
-
-    const a =
-        document.createElement("a");
+    const a = document.createElement("a");
 
     a.href = url;
 
@@ -1455,7 +1270,7 @@ function downloadCSV() {
 
     a.click();
 
-    document.body.removeChild(a);
+    a.remove();
 
     setTimeout(() => {
 
@@ -1470,165 +1285,121 @@ function downloadCSV() {
 // 参加者番号入力
 // =======================
 
-participantNextButton.addEventListener(
-    "click",
-    () => {
+participantNextButton.addEventListener("click", () => {
 
-        participantId =
-            participantIdInput.value.trim();
+    participantId =
+        participantIdInput.value.trim();
 
 
-        // 1以上の整数か確認
-        if (
-            !/^\d+$/.test(participantId) ||
-            Number(participantId) < 1
-        ) {
+    // 1以上の整数か確認
 
-            alert(
-                "参加者番号は1以上の整数で入力してください。"
-            );
+    if (
+        !/^\d+$/.test(participantId) ||
+        Number(participantId) < 1
+    ) {
 
-            return;
+        alert("参加者番号は1以上の整数で入力してください。");
 
-        }
-
-
-        // 新しい実験を開始する
-        clearProgress();
-
-        stopWaitTimer();
-
-        results = [];
-
-        conditions = [];
-
-        conditionIndex = 0;
-
-        questionPool = [];
-        answerPool = [];
-
-        questions = [];
-        answers = [];
-
-        questionIndex = 0;
-
-        basePhase = true;
-
-        nextStep = "participant";
-
-        waitDeadline = null;
-
-
-        participantScreen.style.display = "none";
-
-        startScreen.style.display = "block";
+        return;
 
     }
-);
+
+
+    showScreen(startScreen);
+
+    saveProgress();
+
+});
 
 
 // =======================
 // 実験開始
 // =======================
 
-startButton.addEventListener(
-    "click",
-    () => {
+startButton.addEventListener("click", () => {
 
-        startScreen.style.display = "none";
+    // 前回の保存データを削除
+    clearSavedProgress();
 
-        // 条件を生成してシャッフル
-        generateConditions();
+    stopWaitTimer();
 
-        // 参加者番号に基づいて問題を生成
-        generateQuestions();
+    waitDeadline = null;
 
 
-        // =======================
-        // 初期状態
-        // =======================
+    // 結果を初期化
+    results = [];
 
-        questionIndex = 0;
+    conditionIndex = 0;
+    questionIndex = 0;
 
-        conditionIndex = 0;
+    basePhase = true;
 
-        basePhase = true;
+    questionActive = false;
 
-        questionActive = false;
-
-        nextStep = "question";
-
-        waitDeadline = null;
+    currentSetNumber = null;
 
 
-        questionScreen.style.display = "block";
-
-        waitScreen.style.display = "none";
-
-        finishScreen.style.display = "none";
+    // 条件を生成
+    generateConditions();
 
 
-        // 初期状態を保存
-        saveProgress();
+    // 参加者番号に基づいて問題を生成
+    generateQuestions();
 
-        showQuestion();
 
-    }
-);
+    // ベースライン4問を準備
+    generateBlockQuestions();
+
+
+    // 最初の問題を表示
+    generateQuestion();
+
+    saveProgress();
+
+});
 
 
 // =======================
 // YESボタン
 // =======================
 
-yesButton.addEventListener(
-    "click",
-    () => {
+yesButton.addEventListener("click", () => {
 
-        checkAnswer(true);
+    checkAnswer(true);
 
-    }
-);
+});
 
 
 // =======================
 // NOボタン
 // =======================
 
-noButton.addEventListener(
-    "click",
-    () => {
+noButton.addEventListener("click", () => {
 
-        checkAnswer(false);
+    checkAnswer(false);
 
-    }
-);
+});
 
 
 // =======================
-// CSV保存ボタン
+// CSVダウンロード
 // =======================
 
-downloadButton.addEventListener(
-    "click",
-    () => {
+downloadButton.addEventListener("click", () => {
 
-        downloadCSV();
+    downloadCSV();
 
-    }
-);
+});
 
 
 // =======================
-// ページ読み込み時
-// 保存データを確認
+// 起動時の処理
 // =======================
 
-window.addEventListener(
-    "load",
-    () => {
+window.addEventListener("load", () => {
 
-        checkForSavedProgress();
+    checkForSavedProgress();
 
-    }
-);
+});
+
+
