@@ -1,26 +1,52 @@
 
+// ==================================================
+// 計算課題 main.js
+// タスクスイッチング課題と同じ構成
+// ==================================================
+
+
 // =======================
 // 画面の取得
 // =======================
 
-const participantScreen = document.getElementById("participantScreen");
-const participantIdInput = document.getElementById("participantId");
-const participantNextButton = document.getElementById("participantNextButton");
+const participantScreen =
+    document.getElementById("participantScreen");
 
-const startButton = document.getElementById("startButton");
-const startScreen = document.getElementById("startScreen");
+const participantIdInput =
+    document.getElementById("participantId");
 
-const questionScreen = document.getElementById("questionScreen");
-const stimulus = document.getElementById("stimulus");
+const participantNextButton =
+    document.getElementById("participantNextButton");
 
-const yesButton = document.getElementById("yesButton");
-const noButton = document.getElementById("noButton");
+const startButton =
+    document.getElementById("startButton");
 
-const waitScreen = document.getElementById("waitScreen");
-const waitLabel = document.getElementById("waitLabel");
+const startScreen =
+    document.getElementById("startScreen");
 
-const finishScreen = document.getElementById("finishScreen");
-const downloadButton = document.getElementById("downloadButton");
+const questionScreen =
+    document.getElementById("questionScreen");
+
+const stimulus =
+    document.getElementById("stimulus");
+
+const yesButton =
+    document.getElementById("yesButton");
+
+const noButton =
+    document.getElementById("noButton");
+
+const waitScreen =
+    document.getElementById("waitScreen");
+
+const waitLabel =
+    document.getElementById("waitLabel");
+
+const finishScreen =
+    document.getElementById("finishScreen");
+
+const downloadButton =
+    document.getElementById("downloadButton");
 
 
 // =======================
@@ -31,25 +57,18 @@ let participantId = "";
 
 
 // =======================
-// 現在の問題
-// =======================
-
-let currentStimulus = "";
-let currentAnswer = false;
-let startTime = 0;
-let questionActive = false;
-
-
-// =======================
 // 実験結果
 // =======================
 
 let results = [];
 
-const STORAGE_KEY = "calculationExperimentAutosave_v3";
 
-let waitDeadline = null;
-let currentScreenName = "participant";
+// =======================
+// 保存設定
+// =======================
+
+const STORAGE_KEY =
+    "calculationExperimentAutosave_v3";
 
 
 // =======================
@@ -72,39 +91,91 @@ const waitTimes = [
 
 const blockSize = 4;
 
+const totalConditions = 15;
+
+
+// =======================
+// 実験状態
+// =======================
+
 let conditions = [];
+
 let conditionIndex = 0;
+
 let questionIndex = 0;
 
 let basePhase = true;
 
-let blockQuestions = [];
+
+// =======================
+// 問題セット
+// =======================
+
+// ベースラインの問題
 let baseQuestions = [];
+
+// 全参加者共通の固定問題15セット
 let conditionQuestionSets = [];
 
+// 現在表示している4問
+let blockQuestions = [];
+
+// 現在のセット番号
 let currentSetNumber = null;
 
+
+// =======================
+// 現在の問題情報
+// =======================
+
+let currentStimulus = "";
+
+let currentAnswer = false;
+
+let startTime = 0;
+
+let questionActive = false;
+
+
+// =======================
+// 画面・待機情報
+// =======================
+
+let currentScreenName = "participant";
+
+let waitDeadline = null;
+
 let waitTimeout = null;
+
 let waitInterval = null;
 
 
-// =======================
+// ==================================================
 // 画面表示
-// =======================
+// ==================================================
 
 function showScreen(screen) {
 
     if (screen === participantScreen) {
         currentScreenName = "participant";
-    } else if (screen === startScreen) {
+    }
+
+    else if (screen === startScreen) {
         currentScreenName = "start";
-    } else if (screen === questionScreen) {
+    }
+
+    else if (screen === questionScreen) {
         currentScreenName = "question";
-    } else if (screen === waitScreen) {
+    }
+
+    else if (screen === waitScreen) {
         currentScreenName = "wait";
-    } else if (screen === finishScreen) {
+    }
+
+    else if (screen === finishScreen) {
         currentScreenName = "finish";
     }
+
 
     const screens = [
         participantScreen,
@@ -115,9 +186,11 @@ function showScreen(screen) {
     ];
 
     screens.forEach(element => {
+
         if (element) {
             element.style.display = "none";
         }
+
     });
 
     screen.style.display = "block";
@@ -125,55 +198,67 @@ function showScreen(screen) {
 }
 
 
-// =======================
+// ==================================================
 // 自動保存
-// =======================
+// ==================================================
 
 function saveProgress() {
 
+    const state = {
+
+        participantId,
+
+        results,
+
+        conditions,
+
+        conditionIndex,
+
+        questionIndex,
+
+        basePhase,
+
+        baseQuestions,
+
+        conditionQuestionSets,
+
+        blockQuestions,
+
+        currentSetNumber,
+
+        currentStimulus,
+
+        currentAnswer,
+
+        questionActive,
+
+        currentScreenName,
+
+        waitDeadline,
+
+        savedAt: new Date().toISOString()
+
+    };
+
+
     try {
-
-        const state = {
-
-            participantId,
-            results,
-            conditions,
-            conditionIndex,
-            questionIndex,
-            basePhase,
-
-            blockQuestions,
-            baseQuestions,
-            conditionQuestionSets,
-
-            currentSetNumber,
-
-            currentStimulus,
-            currentAnswer,
-            questionActive,
-
-            currentScreenName,
-            waitDeadline,
-
-            savedAt: new Date().toISOString()
-
-        };
 
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(state)
         );
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
-            "実験データの自動保存に失敗しました。",
+            "自動保存に失敗しました。",
             error
         );
 
         alert(
-            "実験データの自動保存に失敗しました。" +
-            "CSVを保存してください。"
+            "自動保存に失敗しました。"
         );
 
     }
@@ -181,22 +266,27 @@ function saveProgress() {
 }
 
 
-// =======================
+// ==================================================
 // 保存データの取得
-// =======================
+// ==================================================
 
 function getSavedProgress() {
 
     try {
 
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved =
+            localStorage.getItem(STORAGE_KEY);
 
-        return saved ? JSON.parse(saved) : null;
+        return saved
+            ? JSON.parse(saved)
+            : null;
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
-            "保存データを読み込めませんでした。",
+            "保存データの読み込みに失敗しました。",
             error
         );
 
@@ -207,37 +297,27 @@ function getSavedProgress() {
 }
 
 
-// =======================
+// ==================================================
 // 保存データの削除
-// =======================
+// ==================================================
 
 function clearSavedProgress() {
 
-    try {
-
-        localStorage.removeItem(STORAGE_KEY);
-
-    } catch (error) {
-
-        console.error(
-            "保存データを削除できませんでした。",
-            error
-        );
-
-    }
+    localStorage.removeItem(STORAGE_KEY);
 
 }
 
 
-// =======================
-// タイマー解除
-// =======================
+// ==================================================
+// 待機タイマーの停止
+// ==================================================
 
 function stopWaitTimer() {
 
     if (waitTimeout !== null) {
 
         clearTimeout(waitTimeout);
+
         waitTimeout = null;
 
     }
@@ -245,6 +325,7 @@ function stopWaitTimer() {
     if (waitInterval !== null) {
 
         clearInterval(waitInterval);
+
         waitInterval = null;
 
     }
@@ -252,21 +333,24 @@ function stopWaitTimer() {
 }
 
 
-// =======================
+// ==================================================
 // 途中再開
-// =======================
+// ==================================================
 
 function restoreProgress(state) {
 
-    participantId = state.participantId || "";
+    participantId =
+        state.participantId || "";
 
-    results = Array.isArray(state.results)
-        ? state.results
-        : [];
+    results =
+        Array.isArray(state.results)
+            ? state.results
+            : [];
 
-    conditions = Array.isArray(state.conditions)
-        ? state.conditions
-        : [];
+    conditions =
+        Array.isArray(state.conditions)
+            ? state.conditions
+            : [];
 
     conditionIndex =
         Number.isInteger(state.conditionIndex)
@@ -278,32 +362,46 @@ function restoreProgress(state) {
             ? state.questionIndex
             : 0;
 
-    basePhase = state.basePhase !== false;
+    basePhase =
+        state.basePhase !== false;
 
-    blockQuestions = Array.isArray(state.blockQuestions)
-        ? state.blockQuestions
-        : [];
 
-    baseQuestions = Array.isArray(state.baseQuestions)
-        ? state.baseQuestions
-        : [];
+    baseQuestions =
+        Array.isArray(state.baseQuestions)
+            ? state.baseQuestions
+            : [];
 
     conditionQuestionSets =
         Array.isArray(state.conditionQuestionSets)
             ? state.conditionQuestionSets
             : [];
 
-    currentSetNumber = state.currentSetNumber ?? null;
+    blockQuestions =
+        Array.isArray(state.blockQuestions)
+            ? state.blockQuestions
+            : [];
 
-    currentStimulus = state.currentStimulus || "";
-    currentAnswer = Boolean(state.currentAnswer);
+
+    currentSetNumber =
+        state.currentSetNumber ?? null;
+
+    currentStimulus =
+        state.currentStimulus || "";
+
+    currentAnswer =
+        Boolean(state.currentAnswer);
+
+
+    waitDeadline =
+        state.waitDeadline || null;
+
+
+    participantIdInput.value =
+        participantId;
+
 
     // 再開時は反応時間を新しく計測する
     questionActive = false;
-
-    waitDeadline = state.waitDeadline || null;
-
-    participantIdInput.value = participantId;
 
 
     // 実験終了後
@@ -311,7 +409,8 @@ function restoreProgress(state) {
 
         showScreen(finishScreen);
 
-        downloadButton.style.display = "inline-block";
+        downloadButton.style.display =
+            "inline-block";
 
         return;
 
@@ -321,8 +420,7 @@ function restoreProgress(state) {
     // 待機中
     if (
         state.currentScreenName === "wait" &&
-        waitDeadline !== null &&
-        conditions[conditionIndex]
+        waitDeadline !== null
     ) {
 
         const remainingMs = Math.max(
@@ -344,18 +442,9 @@ function restoreProgress(state) {
         questionIndex < blockQuestions.length
     ) {
 
-        stimulus.textContent = currentStimulus;
-
         showScreen(questionScreen);
 
-        questionActive = true;
-
-        yesButton.disabled = false;
-        noButton.disabled = false;
-
-        startTime = performance.now();
-
-        saveProgress();
+        generateQuestion();
 
         return;
 
@@ -370,13 +459,14 @@ function restoreProgress(state) {
 }
 
 
-// =======================
-// 起動時の保存データ確認
-// =======================
+// ==================================================
+// 保存データの確認
+// ==================================================
 
 function checkForSavedProgress() {
 
     const saved = getSavedProgress();
+
 
     if (
         !saved ||
@@ -384,25 +474,37 @@ function checkForSavedProgress() {
         !Array.isArray(saved.results)
     ) {
 
+        showScreen(participantScreen);
+
         return;
 
     }
 
+
     const shouldResume = confirm(
 
-        "前回の計算課題の保存データがあります。\n" +
-        "参加者番号：" + saved.participantId + "\n" +
-        "保存済み回答数：" + saved.results.length + "問\n\n" +
-        "OK：続きから再開する\n" +
-        "キャンセル：保存データを削除して新しく開始する"
+        "前回の計算課題の保存データがあります。\n\n" +
+
+        "参加者番号：" +
+        saved.participantId + "\n" +
+
+        "回答済み：" +
+        saved.results.length + "問\n\n" +
+
+        "OK：続きから再開\n" +
+
+        "キャンセル：保存データを削除して新しく開始"
 
     );
+
 
     if (shouldResume) {
 
         restoreProgress(saved);
 
-    } else {
+    }
+
+    else {
 
         clearSavedProgress();
 
@@ -413,52 +515,19 @@ function checkForSavedProgress() {
 }
 
 
-// =======================
-// 条件生成
-// =======================
-
-function generateConditions() {
-
-    conditions = [];
-
-    let id = 1;
-
-    for (const mode of modes) {
-
-        for (const time of waitTimes) {
-
-            conditions.push({
-
-                id: id++,
-
-                mode: mode,
-
-                waitTime: time
-
-            });
-
-        }
-
-    }
-
-    conditions = shuffleArray(conditions);
-
-    console.log("===== 待機条件 =====");
-
-    console.table(conditions);
-
-}
-
-
-// =======================
+// ==================================================
 // 配列のシャッフル
-// =======================
+// ==================================================
 
 function shuffleArray(array, random = Math.random) {
 
     const shuffled = [...array];
 
-    for (let i = shuffled.length - 1; i > 0; i--) {
+    for (
+        let i = shuffled.length - 1;
+        i > 0;
+        i--
+    ) {
 
         const j = Math.floor(
             random() * (i + 1)
@@ -479,9 +548,9 @@ function shuffleArray(array, random = Math.random) {
 }
 
 
-// =======================
-// 参加者番号から乱数を生成
-// =======================
+// ==================================================
+// 固定乱数の生成
+// ==================================================
 
 function createSeededRandom(id) {
 
@@ -502,62 +571,109 @@ function createSeededRandom(id) {
         seed = 1;
     }
 
+
     return function () {
 
         seed ^= seed << 13;
+
         seed ^= seed >>> 17;
+
         seed ^= seed << 5;
 
-        return (seed >>> 0) / 4294967296;
+        return (
+            seed >>> 0
+        ) / 4294967296;
 
     };
 
 }
 
 
-// =======================
-// 問題セットの割り当て
-// =======================
+// ==================================================
+// 待機条件の生成
+// ==================================================
 
-// 参加者1：セット1→2→3→...
-// 参加者2：セット15→1→2→...
-// 参加者3：セット14→15→1→...
+function generateConditions() {
 
-function getAssignedSetIndex(conditionArrayIndex) {
+    conditions = [];
 
-    const participantNumber = Number(participantId);
+    let id = 1;
 
-    const offset = (participantNumber - 1) % 15;
 
-    return (
-        conditionArrayIndex - offset + 15
-    ) % 15;
+    for (const mode of modes) {
+
+        for (const time of waitTimes) {
+
+            conditions.push({
+
+                id: id++,
+
+                mode: mode,
+
+                waitTime: time
+
+            });
+
+        }
+
+    }
+
+
+    // 待機条件は毎回ランダム
+    conditions = shuffleArray(conditions);
+
+
+    console.log("===== 待機条件 =====");
+
+    console.table(conditions);
 
 }
 
 
-// =======================
-// 計算問題の生成
-// =======================
+// ==================================================
+// 参加者番号によるセット割り当て
+// ==================================================
 
-function generateQuestions() {
+function getAssignedSetIndex(conditionArrayIndex) {
 
-    const random = createSeededRandom(participantId);
+    const participantNumber =
+        Number(participantId);
+
+    const offset =
+        (participantNumber - 1) % totalConditions;
 
 
-    // 問題の種類ごとに分類
+    return (
+        conditionArrayIndex - offset +
+        totalConditions
+    ) % totalConditions;
+
+}
+
+
+// ==================================================
+// 計算問題の候補を生成
+// ==================================================
+
+function createCalculationPools() {
+
     const addCorrect = [];
+
     const addIncorrect = [];
 
     const subCorrect = [];
+
     const subIncorrect = [];
 
 
-    // 重複防止
     const seen = new Set();
 
 
-    function addProblem(pool, stimulus, answer) {
+    function addProblem(
+        pool,
+        stimulus,
+        answer
+    ) {
 
         if (seen.has(stimulus)) {
             return;
@@ -576,16 +692,21 @@ function generateQuestions() {
     }
 
 
-    // =======================
+    // --------------------------------
     // 問題生成
-    // =======================
+    // --------------------------------
 
     for (let a = 20; a <= 99; a++) {
 
         for (let b = 20; b <= 99; b++) {
 
 
-            // 足し算：繰り上がりあり・正解2桁
+            // =======================
+            // 足し算
+            // =======================
+
+            // 繰り上がりあり
+            // 答えは2桁
 
             if (
                 (a % 10) + (b % 10) >= 10 &&
@@ -594,16 +715,26 @@ function generateQuestions() {
 
                 const ans = a + b;
 
+
+                // 正解問題
+
                 addProblem(
+
                     addCorrect,
+
                     `${a} + ${b} = ${ans}`,
+
                     true
+
                 );
 
 
-                // 誤答：正解の±10
+                // 誤答問題（±10）
 
-                for (const wrong of [ans - 10, ans + 10]) {
+                for (const wrong of [
+                    ans - 10,
+                    ans + 10
+                ]) {
 
                     if (
                         wrong >= 10 &&
@@ -611,9 +742,13 @@ function generateQuestions() {
                     ) {
 
                         addProblem(
+
                             addIncorrect,
+
                             `${a} + ${b} = ${wrong}`,
+
                             false
+
                         );
 
                     }
@@ -623,7 +758,12 @@ function generateQuestions() {
             }
 
 
-            // 引き算：繰り下がりあり・正解2桁
+            // =======================
+            // 引き算
+            // =======================
+
+            // 繰り下がりあり
+            // 答えは2桁
 
             if (
                 a > b &&
@@ -633,16 +773,26 @@ function generateQuestions() {
 
                 const ans = a - b;
 
+
+                // 正解問題
+
                 addProblem(
+
                     subCorrect,
+
                     `${a} - ${b} = ${ans}`,
+
                     true
+
                 );
 
 
-                // 誤答：正解の±10
+                // 誤答問題（±10）
 
-                for (const wrong of [ans - 10, ans + 10]) {
+                for (const wrong of [
+                    ans - 10,
+                    ans + 10
+                ]) {
 
                     if (
                         wrong >= 10 &&
@@ -650,9 +800,13 @@ function generateQuestions() {
                     ) {
 
                         addProblem(
+
                             subIncorrect,
+
                             `${a} - ${b} = ${wrong}`,
+
                             false
+
                         );
 
                     }
@@ -666,72 +820,75 @@ function generateQuestions() {
     }
 
 
-    // =======================
-    // 4種類の問題
-    // =======================
+    return [
 
-    const pools = [
+        addCorrect,
 
-        {
-            name: "足し算・正しい",
-            data: addCorrect
-        },
+        addIncorrect,
 
-        {
-            name: "足し算・間違い",
-            data: addIncorrect
-        },
+        subCorrect,
 
-        {
-            name: "引き算・正しい",
-            data: subCorrect
-        },
-
-        {
-            name: "引き算・間違い",
-            data: subIncorrect
-        }
+        subIncorrect
 
     ];
+
+}
+
+
+// ==================================================
+// 全参加者共通の固定問題15セットを生成
+// ==================================================
+
+function generateQuestions() {
+
+    // 参加者番号に関係なく同じ乱数
+    const random = createSeededRandom(
+        "CALCULATION_FIXED_SET_V1"
+    );
+
+
+    const pools = createCalculationPools();
 
 
     const selectedPools = [];
 
 
-    // 各種類から16問ずつ選ぶ
+    // --------------------------------
+    // 4種類からそれぞれ15問選ぶ
+    // --------------------------------
 
     for (const pool of pools) {
 
         const shuffled = shuffleArray(
-            pool.data,
+            pool,
             random
         );
 
-        if (shuffled.length < 16) {
+
+        if (shuffled.length < 15) {
 
             throw new Error(
-                pool.name +
-                "の問題が16問未満です：" +
-                shuffled.length +
-                "問"
+                "問題数が不足しています。"
             );
 
         }
 
+
         selectedPools.push(
-            shuffled.slice(0, 16)
+            shuffled.slice(0, 15)
         );
 
     }
 
 
-    // =======================
-    // 16ブロックを作成
-    // =======================
+    // --------------------------------
+    // 15セットを作成
+    // --------------------------------
 
     const blocks = [];
 
-    for (let i = 0; i < 16; i++) {
+
+    for (let i = 0; i < 15; i++) {
 
         const block = [
 
@@ -745,9 +902,8 @@ function generateQuestions() {
 
         ];
 
-        // セット内の順番を固定するため
-        // 参加者番号に基づく乱数でシャッフル
 
+        // セット内の問題順を固定
         blocks.push(
             shuffleArray(block, random)
         );
@@ -755,80 +911,117 @@ function generateQuestions() {
     }
 
 
-    // ブロックの順番も参加者番号に基づいて決定
-
-    const shuffledBlocks = shuffleArray(
+    // セットの順番も固定
+    conditionQuestionSets = shuffleArray(
         blocks,
         random
     );
 
 
-    // =======================
-    // ベースラインと条件課題に分ける
-    // =======================
-
-    baseQuestions = shuffledBlocks[0].map(
-        problem => ({ ...problem })
+    console.log(
+        "===== 全参加者共通の固定問題 ====="
     );
 
-    conditionQuestionSets = shuffledBlocks
-        .slice(1)
-        .map(block =>
-            block.map(problem => ({ ...problem }))
-        );
 
+    conditionQuestionSets.forEach(
+        (set, index) => {
 
-    console.log("===== 問題構成 =====");
+            console.log(
+                `固定セット${index + 1}`,
+                set
+            );
 
-    console.log("ベースライン：", baseQuestions);
+        }
+    );
+
 
     console.log(
-        "条件課題セット数：",
+        "固定問題セット数：",
         conditionQuestionSets.length
     );
-
-    console.log("===== 条件課題の問題セット =====");
-
-    conditionQuestionSets.forEach((set, index) => {
-
-        console.log(
-            `セット${index + 1}`,
-            set
-        );
-
-    });
 
 }
 
 
-// =======================
+// ==================================================
 // 4問分の問題を準備
-// =======================
+// ==================================================
 
 function generateBlockQuestions(setIndex = null) {
 
+
+    // =======================
     // ベースライン
+    // =======================
+
     if (setIndex === null) {
 
-        blockQuestions = baseQuestions.map(
+        const pools = createCalculationPools();
+
+
+        // 4種類から1問ずつランダムに選ぶ
+
+        blockQuestions = pools.map(pool => {
+
+            const randomIndex = Math.floor(
+                Math.random() * pool.length
+            );
+
+            return {
+                ...pool[randomIndex]
+            };
+
+        });
+
+
+        // 問題順もランダム
+
+        blockQuestions = shuffleArray(
+            blockQuestions
+        );
+
+
+        baseQuestions = blockQuestions.map(
             question => ({ ...question })
         );
+
 
         currentSetNumber = null;
 
     }
 
+
+    // =======================
     // 条件課題
+    // =======================
+
     else {
+
+        if (
+            setIndex < 0 ||
+            setIndex >= conditionQuestionSets.length
+        ) {
+
+            console.error(
+                "問題セットの指定が不正です。",
+                setIndex
+            );
+
+            return;
+
+        }
+
 
         blockQuestions =
             conditionQuestionSets[setIndex].map(
                 question => ({ ...question })
             );
 
+
         currentSetNumber = setIndex + 1;
 
     }
+
 
     questionIndex = 0;
 
@@ -837,30 +1030,47 @@ function generateBlockQuestions(setIndex = null) {
 }
 
 
-// =======================
+// ==================================================
 // 問題表示
-// =======================
+// ==================================================
 
 function generateQuestion() {
 
-    if (questionIndex >= blockQuestions.length) {
+    if (
+        questionIndex >= blockQuestions.length
+    ) {
+
         return;
+
     }
 
-    const question = blockQuestions[questionIndex];
 
-    currentStimulus = question.stimulus;
+    const question =
+        blockQuestions[questionIndex];
 
-    currentAnswer = question.answer;
 
-    stimulus.textContent = currentStimulus;
+    currentStimulus =
+        question.stimulus;
+
+    currentAnswer =
+        question.answer;
+
+
+    stimulus.textContent =
+        currentStimulus;
+
 
     questionActive = true;
 
+
     yesButton.disabled = false;
+
     noButton.disabled = false;
 
+
+    // 反応時間の計測開始
     startTime = performance.now();
+
 
     showScreen(questionScreen);
 
@@ -869,39 +1079,51 @@ function generateQuestion() {
 }
 
 
-// =======================
+// ==================================================
 // 待機画面
-// =======================
+// ==================================================
 
 function startWaitScreen(remainingMs = null) {
 
     questionActive = false;
 
     yesButton.disabled = true;
+
     noButton.disabled = true;
+
 
     stopWaitTimer();
 
 
-    // 現在の条件を取得
-    const currentCondition = conditions[conditionIndex];
+    const currentCondition =
+        conditions[conditionIndex];
+
 
     if (!currentCondition) {
         return;
     }
 
-    const waitTime = currentCondition.waitTime;
 
-    const mode = currentCondition.mode;
+    const waitTime =
+        currentCondition.waitTime;
 
-    const totalWaitMs = waitTime * 1000;
+    const mode =
+        currentCondition.mode;
+
+
+    const totalWaitMs =
+        waitTime * 1000;
+
 
     const actualRemainingMs =
         remainingMs === null
             ? totalWaitMs
             : Math.max(0, remainingMs);
 
-    waitDeadline = Date.now() + actualRemainingMs;
+
+    waitDeadline =
+        Date.now() + actualRemainingMs;
+
 
     showScreen(waitScreen);
 
@@ -909,12 +1131,13 @@ function startWaitScreen(remainingMs = null) {
 
 
     // =======================
-    // 表示方法なし
+    // 表示なし
     // =======================
 
     if (mode === "none") {
 
-        waitLabel.textContent = "お待ちください";
+        waitLabel.textContent =
+            "お待ちください";
 
     }
 
@@ -928,22 +1151,31 @@ function startWaitScreen(remainingMs = null) {
         const updateRemaining = () => {
 
             const remain = Math.max(
+
                 0,
+
                 Math.ceil(
                     (waitDeadline - Date.now()) / 1000
                 )
+
             );
+
 
             waitLabel.textContent =
                 "残り時間：" + remain + "秒";
 
         };
 
+
         updateRemaining();
 
+
         waitInterval = setInterval(
+
             updateRemaining,
+
             100
+
         );
 
     }
@@ -958,8 +1190,11 @@ function startWaitScreen(remainingMs = null) {
         const updateElapsed = () => {
 
             const elapsedSeconds = Math.max(
+
                 0,
+
                 Math.floor(
+
                     (
                         totalWaitMs -
                         Math.max(
@@ -967,28 +1202,39 @@ function startWaitScreen(remainingMs = null) {
                             waitDeadline - Date.now()
                         )
                     ) / 1000
+
                 )
+
             );
+
 
             waitLabel.textContent =
                 "経過時間：" +
-                Math.min(waitTime, elapsedSeconds) +
+                Math.min(
+                    waitTime,
+                    elapsedSeconds
+                ) +
                 "秒";
 
         };
 
+
         updateElapsed();
 
+
         waitInterval = setInterval(
+
             updateElapsed,
+
             100
+
         );
 
     }
 
 
     // =======================
-    // 待機終了後
+    // 待機終了
     // =======================
 
     waitTimeout = setTimeout(() => {
@@ -998,10 +1244,11 @@ function startWaitScreen(remainingMs = null) {
         waitDeadline = null;
 
 
-        // 次の条件に対応する問題セットを取得
+        // 参加者番号に応じたセットを取得
 
         const setIndex =
             getAssignedSetIndex(conditionIndex);
+
 
         generateBlockQuestions(setIndex);
 
@@ -1014,40 +1261,58 @@ function startWaitScreen(remainingMs = null) {
 }
 
 
-// =======================
-// 回答判定・記録
-// =======================
+// ==================================================
+// 回答処理
+// ==================================================
 
 function checkAnswer(userPressedYes) {
 
     // 二重回答防止
+
     if (!questionActive) {
         return;
     }
 
+
     questionActive = false;
 
+
     yesButton.disabled = true;
+
     noButton.disabled = true;
 
 
+    // =======================
     // 反応時間
+    // =======================
+
     const reactionTime =
         performance.now() - startTime;
 
 
+    // =======================
     // 正誤判定
+    // =======================
+
     const correct =
         userPressedYes === currentAnswer;
 
 
+    // =======================
+    // 実験フェーズ
+    // =======================
+
     const phase =
-        basePhase ? "base" : "condition";
+        basePhase
+            ? "base"
+            : "condition";
+
 
     const mode =
         basePhase
             ? "none"
             : conditions[conditionIndex].mode;
+
 
     const waitTime =
         basePhase
@@ -1069,7 +1334,9 @@ function checkAnswer(userPressedYes) {
 
         stimulus: currentStimulus,
 
-        response: userPressedYes ? "YES" : "NO",
+        response: userPressedYes
+            ? "YES"
+            : "NO",
 
         correct: correct,
 
@@ -1079,45 +1346,46 @@ function checkAnswer(userPressedYes) {
 
         waitTime: waitTime,
 
-        condition:
-            basePhase
-                ? "base"
-                : conditions[conditionIndex].id,
+        condition: basePhase
+            ? "base"
+            : conditions[conditionIndex].id,
 
-        conditionOrder:
-            basePhase
-                ? "base"
-                : conditionIndex + 1,
+        conditionOrder: basePhase
+            ? "base"
+            : conditionIndex + 1,
 
-        setNumber:
-            basePhase
-                ? "base"
-                : currentSetNumber,
+        setNumber: basePhase
+            ? "base"
+            : currentSetNumber,
 
         questionNumber: questionIndex + 1
 
     });
 
 
-    console.log(results[results.length - 1]);
+    console.log(
+        results[results.length - 1]
+    );
 
 
-    // 次の問題へ
+    // 次の問題番号へ
     questionIndex++;
 
 
-    // 回答直後に保存
+    // 回答直後に自動保存
     saveProgress();
 
 
     // =======================
-    // 4問終了後
+    // 4問終了
     // =======================
 
     if (questionIndex >= blockSize) {
 
 
+        // --------------------------------
         // ベースライン終了
+        // --------------------------------
 
         if (basePhase) {
 
@@ -1132,17 +1400,28 @@ function checkAnswer(userPressedYes) {
         }
 
 
+        // --------------------------------
         // 最後の条件終了
+        // --------------------------------
 
-        if (conditionIndex === conditions.length - 1) {
+        if (
+            conditionIndex ===
+            conditions.length - 1
+        ) {
 
             questionActive = false;
 
             waitDeadline = null;
 
+            stopWaitTimer();
+
+
             showScreen(finishScreen);
 
-            downloadButton.style.display = "inline-block";
+
+            downloadButton.style.display =
+                "inline-block";
+
 
             saveProgress();
 
@@ -1151,7 +1430,9 @@ function checkAnswer(userPressedYes) {
         }
 
 
+        // --------------------------------
         // 次の条件へ
+        // --------------------------------
 
         conditionIndex++;
 
@@ -1162,22 +1443,26 @@ function checkAnswer(userPressedYes) {
     }
 
 
-    // 4問未満なら次の問題
+    // =======================
+    // 次の問題を表示
+    // =======================
 
     generateQuestion();
 
 }
 
 
-// =======================
+// ==================================================
 // CSV保存
-// =======================
+// ==================================================
 
 function downloadCSV() {
 
     if (results.length === 0) {
 
-        alert("保存する実験結果がありません。");
+        alert(
+            "保存する実験結果がありません。"
+        );
 
         return;
 
@@ -1221,13 +1506,18 @@ function downloadCSV() {
 
         const text = String(value ?? "");
 
-        return '"' + text.replace(/"/g, '""') + '"';
+        return (
+            '"' +
+            text.replace(/"/g, '""') +
+            '"'
+        );
 
     }
 
 
     let csv =
-        headers.map(escapeCSV).join(",") + "\r\n";
+        headers.map(escapeCSV).join(",") +
+        "\r\n";
 
 
     results.forEach(result => {
@@ -1238,12 +1528,14 @@ function downloadCSV() {
 
         });
 
+
         csv += row.join(",") + "\r\n";
 
     });
 
 
     // Excel用BOM
+
     const blob = new Blob(
 
         ["\uFEFF" + csv],
@@ -1255,22 +1547,29 @@ function downloadCSV() {
     );
 
 
-    const url = URL.createObjectURL(blob);
+    const url =
+        URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
+
+    const a =
+        document.createElement("a");
+
 
     a.href = url;
+
 
     a.download =
         "calculation_experiment_result_" +
         participantId.replace(/[\\/:*?"<>|]/g, "_") +
         ".csv";
 
+
     document.body.appendChild(a);
 
     a.click();
 
     a.remove();
+
 
     setTimeout(() => {
 
@@ -1281,125 +1580,166 @@ function downloadCSV() {
 }
 
 
-// =======================
+// ==================================================
 // 参加者番号入力
-// =======================
+// ==================================================
 
-participantNextButton.addEventListener("click", () => {
+participantNextButton.addEventListener(
+    "click",
+    () => {
 
-    participantId =
-        participantIdInput.value.trim();
+        participantId =
+            participantIdInput.value.trim();
 
 
-    // 1以上の整数か確認
+        // 1以上の整数か確認
 
-    if (
-        !/^\d+$/.test(participantId) ||
-        Number(participantId) < 1
-    ) {
+        if (
+            !/^\d+$/.test(participantId) ||
+            Number(participantId) < 1
+        ) {
 
-        alert("参加者番号は1以上の整数で入力してください。");
+            alert(
+                "参加者番号は1以上の整数で入力してください。"
+            );
 
-        return;
+            return;
+
+        }
+
+
+        showScreen(startScreen);
+
+        saveProgress();
 
     }
+);
 
 
-    showScreen(startScreen);
-
-    saveProgress();
-
-});
-
-
-// =======================
+// ==================================================
 // 実験開始
-// =======================
+// ==================================================
 
-startButton.addEventListener("click", () => {
+startButton.addEventListener(
+    "click",
+    () => {
 
-    // 前回の保存データを削除
-    clearSavedProgress();
+        // 古い保存データを削除
 
-    stopWaitTimer();
+        clearSavedProgress();
 
-    waitDeadline = null;
+        stopWaitTimer();
 
-
-    // 結果を初期化
-    results = [];
-
-    conditionIndex = 0;
-    questionIndex = 0;
-
-    basePhase = true;
-
-    questionActive = false;
-
-    currentSetNumber = null;
+        waitDeadline = null;
 
 
-    // 条件を生成
-    generateConditions();
+        // =======================
+        // 状態を初期化
+        // =======================
+
+        results = [];
+
+        conditionIndex = 0;
+
+        questionIndex = 0;
+
+        basePhase = true;
+
+        questionActive = false;
+
+        currentSetNumber = null;
+
+        currentStimulus = "";
+
+        currentAnswer = false;
 
 
-    // 参加者番号に基づいて問題を生成
-    generateQuestions();
+        // =======================
+        // 待機条件を生成
+        // =======================
+
+        generateConditions();
 
 
-    // ベースライン4問を準備
-    generateBlockQuestions();
+        // =======================
+        // 固定問題15セットを生成
+        // =======================
+
+        generateQuestions();
 
 
-    // 最初の問題を表示
-    generateQuestion();
+        // =======================
+        // ベースライン4問を生成
+        // =======================
 
-    saveProgress();
-
-});
+        generateBlockQuestions();
 
 
-// =======================
+        // =======================
+        // 最初の問題を表示
+        // =======================
+
+        generateQuestion();
+
+        saveProgress();
+
+    }
+);
+
+
+// ==================================================
 // YESボタン
-// =======================
+// ==================================================
 
-yesButton.addEventListener("click", () => {
+yesButton.addEventListener(
+    "click",
+    () => {
 
-    checkAnswer(true);
+        checkAnswer(true);
 
-});
+    }
+);
 
 
-// =======================
+// ==================================================
 // NOボタン
-// =======================
+// ==================================================
 
-noButton.addEventListener("click", () => {
+noButton.addEventListener(
+    "click",
+    () => {
 
-    checkAnswer(false);
+        checkAnswer(false);
 
-});
-
-
-// =======================
-// CSVダウンロード
-// =======================
-
-downloadButton.addEventListener("click", () => {
-
-    downloadCSV();
-
-});
+    }
+);
 
 
-// =======================
+// ==================================================
+// CSVダウンロードボタン
+// ==================================================
+
+downloadButton.addEventListener(
+    "click",
+    () => {
+
+        downloadCSV();
+
+    }
+);
+
+
+// ==================================================
 // 起動時の処理
-// =======================
+// ==================================================
 
-window.addEventListener("load", () => {
+window.addEventListener(
+    "load",
+    () => {
 
-    checkForSavedProgress();
+        downloadButton.style.display = "none";
 
-});
+        checkForSavedProgress();
 
-
+    }
+);
